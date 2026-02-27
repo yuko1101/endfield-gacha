@@ -29,7 +29,7 @@
           </NuxtLink>
           <NuxtLink v-else :to="{ path: '/setting', query: { from: route.fullPath } }">
             <UChip :show="updateHint" color="primary" size="sm">
-              <UButton icon="i-lucide-settings" label="设置" color="neutral" variant="outline" />
+              <UButton icon="i-lucide-settings" color="neutral" variant="outline" />
             </UChip>
           </NuxtLink>
         </div>
