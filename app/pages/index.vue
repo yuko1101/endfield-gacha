@@ -21,9 +21,10 @@
       </template>
 
       <div class="absolute top-18 right-3 flex flex-col gap-1">
-        <UBadge variant="outline">当前已垫: {{ selectedSpecialStat.pityCount }} 抽</UBadge>
+        <UBadge v-if="!isAllSpecialSelected" variant="outline">当前已垫: {{ selectedSpecialStat.pityCount }} 抽</UBadge>
         <UBadge
           v-if="
+            !isAllSpecialSelected &&
             selectedSpecialStat.bigPityRemaining !== undefined &&
             selectedSpecialStat.bigPityMax !== undefined
           "
@@ -69,12 +70,11 @@
               </span>
 
               <span class="text-gray-400">[{{ rec.isFree ? '加急招募' : rec.pity }}]</span>
-
               <span v-if="rec.isNew" class="text-red-500 font-bold ml-0.5 text-[10px]">
                 [NEW]
               </span>
 
-              <svg width="20" height="20" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" v-if="selectedSpecialStat.up6Id && !rec.isUp"
+              <svg width="20" height="20" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" v-if="rec.up6Id && rec.isUp === false"
                 class="absolute -top-2 -right-2 select-none">
                 <circle cx="150" cy="150" r="140" fill="oklch(55.1% 0.027 264.364)" />
                 <text x="50%" y="50%"
@@ -175,6 +175,7 @@ const isSystem = computed(() => isSystemUid(uid.value))
 const systemLabel = computed(() => systemUidLabel(uid.value || SYSTEM_UID_CN))
 
 const SPECIAL_POOL_TYPE = 'E_CharacterGachaPoolType_Special'
+const ALL_SPECIAL_VALUE = '__all__'
 
 const specialStats = computed(() =>
   (statistics.value || []).filter((s) => s.poolType === SPECIAL_POOL_TYPE),
@@ -185,13 +186,17 @@ const otherStats = computed(() =>
 )
 
 const specialPoolOptions = computed(() =>
-  specialStats.value.map((s) => ({
-    label: s.poolName,
-    value: s.poolId || s.poolName,
-  })),
+  [
+    ...(specialStats.value.length > 1 ? [{ label: '全部', value: ALL_SPECIAL_VALUE }] : []),
+    ...specialStats.value.map((s) => ({
+      label: s.poolName,
+      value: s.poolId || s.poolName,
+    })),
+  ],
 )
 
 const selectedSpecialPoolId = ref<string>('')
+const isAllSpecialSelected = computed(() => selectedSpecialPoolId.value === ALL_SPECIAL_VALUE)
 
 watch(
   specialStats,
@@ -202,6 +207,7 @@ watch(
     }
 
     const selectedKey = selectedSpecialPoolId.value
+    if (selectedKey === ALL_SPECIAL_VALUE) return
     const isValid = list.some((s) => (s.poolId || s.poolName) === selectedKey)
     if (isValid) return
 
@@ -215,14 +221,51 @@ watch(
   { immediate: true },
 )
 
+const allSpecialStat = computed<GachaStatistics | undefined>(() => {
+  const list = specialStats.value || []
+  if (list.length <= 0) return undefined
+
+  const totalPulls = list.reduce((sum, s) => sum + (s.totalPulls || 0), 0)
+  const count6 = list.reduce((sum, s) => sum + (s.count6 || 0), 0)
+  const count5 = list.reduce((sum, s) => sum + (s.count5 || 0), 0)
+  const count4 = list.reduce((sum, s) => sum + (s.count4 || 0), 0)
+
+  // 直接按“池段”拼接：specialStats 本身按时间段分组（最新池在前），拼接后大体符合时间顺序。
+  const history6 = list.flatMap((s) => s.history6 || [])
+
+  return {
+    poolType: SPECIAL_POOL_TYPE,
+    poolName: '全部',
+    totalPulls,
+    pityCount: 0,
+    count6,
+    count5,
+    count4,
+    history6,
+  }
+})
+
 const selectedSpecialStat = computed<GachaStatistics | undefined>(() => {
   if (specialStats.value.length <= 0) return undefined
+  if (selectedSpecialPoolId.value === ALL_SPECIAL_VALUE) {
+    return allSpecialStat.value || specialStats.value[0]
+  }
   const key = selectedSpecialPoolId.value
   return (
     specialStats.value.find((s) => (s.poolId || s.poolName) === key) ||
     specialStats.value[0]
   )
 })
+
+const selectedSpecialHistory6Count = computed(
+  () => selectedSpecialStat.value?.history6?.length || 0,
+)
+const selectedSpecialOffCount = computed(
+  () =>
+    (selectedSpecialStat.value?.history6 || []).filter(
+      (r) => !!r.up6Id && r.isUp === false,
+    ).length,
+)
 
 interface StarRow {
   label: string;

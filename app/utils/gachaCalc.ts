@@ -157,6 +157,9 @@ export const analyzeSpecialPoolData = (
         isNew: item.isNew,
         isFree,
         isUp: !!current.up6Id && item.charId === current.up6Id,
+        poolId: current.poolId,
+        poolName: current.poolName,
+        up6Id: current.up6Id || undefined,
       });
 
       if (current.up6Id && item.charId === current.up6Id) current.gotUp6 = true;
