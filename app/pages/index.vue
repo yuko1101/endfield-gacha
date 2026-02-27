@@ -27,7 +27,7 @@
       </template>
 
       <div class="absolute top-18 right-3 flex flex-col gap-1">
-        <UBadge v-if="!isAllSpecialSelected" variant="outline">当前已垫: {{ selectedSpecialStat.pityCount }} 抽</UBadge>
+        <UBadge variant="outline">当前已垫: {{ selectedSpecialStat.pityCount }} 抽</UBadge>
         <UBadge
           v-if="
             !isAllSpecialSelected &&
@@ -255,6 +255,7 @@ const allSpecialStat = computed<GachaStatistics | undefined>(() => {
   const list = specialStats.value || []
   if (list.length <= 0) return undefined
 
+  const current = list.find((s) => s.isCurrentPool) || list[0]!
   const totalPulls = list.reduce((sum, s) => sum + (s.totalPulls || 0), 0)
   const count6 = list.reduce((sum, s) => sum + (s.count6 || 0), 0)
   const count5 = list.reduce((sum, s) => sum + (s.count5 || 0), 0)
@@ -266,7 +267,7 @@ const allSpecialStat = computed<GachaStatistics | undefined>(() => {
     poolType: SPECIAL_POOL_TYPE,
     poolName: '全部',
     totalPulls,
-    pityCount: 0,
+    pityCount: current.pityCount || 0,
     count6,
     count5,
     count4,
