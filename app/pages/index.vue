@@ -60,7 +60,12 @@
         </div>
 
         <div class="mt-3">
-          <p class="font-semibold mb-2 text-gray-500 text-xs">6★ 历史记录:</p>
+          <p class="font-semibold mb-2 text-gray-500 text-xs">
+            6★ 历史记录:
+            <span class="font-normal text-gray-400">
+              出卡数 {{ selectedSpecialHistory6Count }} 次 · 歪 {{ selectedSpecialOffCount }} 次
+            </span>
+          </p>
 
           <div v-if="selectedSpecialStat.history6.length > 0" class="flex flex-wrap gap-2">
             <div v-for="(rec, idx) in [...selectedSpecialStat.history6].reverse()" :key="idx"

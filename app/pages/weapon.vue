@@ -41,7 +41,12 @@
         </div>
 
         <div class="mt-3">
-          <p class="font-semibold mb-2 text-gray-500 text-xs">6★ 历史记录:</p>
+          <p class="font-semibold mb-2 text-gray-500 text-xs">
+            6★ 历史记录:
+            <span class="font-normal text-gray-400">
+              出卡数 {{ getHistory6Count(stat) }} 次 · 歪 {{ getOffCount(stat) }} 次
+            </span>
+          </p>
 
           <div v-if="stat.history6.length > 0" class="flex flex-wrap gap-2">
             <div v-for="(rec, idx) in [...stat.history6].reverse()" :key="idx"
@@ -117,4 +122,10 @@ const getAvg = (count: number, total: number) => {
   if (count <= 0) return '0.00';
   return (total / count).toFixed(2);
 };
+
+const getHistory6Count = (stat: any) => (stat?.history6 || []).length
+const getOffCount = (stat: any) =>
+  stat?.up6Id
+    ? (stat?.history6 || []).filter((r: any) => r?.isUp === false).length
+    : 0
 </script>
