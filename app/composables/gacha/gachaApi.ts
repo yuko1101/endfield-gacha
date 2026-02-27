@@ -33,6 +33,23 @@ export const createGachaApi = (deps: {
     type: "char" | "weapon",
   ) => Promise<number>;
 }) => {
+  const isDigitsOnly = (value: string) => /^\d+$/.test(value);
+
+  const compareSeqId = (a: string, b: string) => {
+    if (a === b) return 0;
+
+    const aDigits = isDigitsOnly(a);
+    const bDigits = isDigitsOnly(b);
+
+    if (aDigits && bDigits) {
+      if (a.length !== b.length) return a.length > b.length ? 1 : -1;
+      return a.localeCompare(b);
+    }
+
+    if (aDigits !== bDigits) return aDigits ? 1 : -1;
+    return a.localeCompare(b);
+  };
+
   const fetchPaginatedData = async <T extends GachaItem>(
     u8_token: string,
     baseUrl: string,
@@ -40,6 +57,7 @@ export const createGachaApi = (deps: {
     extraParams: Record<string, string>,
     progress?: { type: "char" | "weapon"; poolName: string },
     lang: string = "zh-cn",
+    stopSeqId: string = "",
   ): Promise<T[]> => {
     const allData: T[] = [];
     let nextSeqId = "";
@@ -92,8 +110,22 @@ export const createGachaApi = (deps: {
         const list = res.data.list as T[];
         if (list.length === 0) break;
 
-        allData.push(...list);
-        hasMore = res.data.hasMore;
+        if (stopSeqId) {
+          const newOnly = list.filter(
+            (item) => compareSeqId(String(item?.seqId || ""), stopSeqId) > 0,
+          );
+          allData.push(...newOnly);
+
+          // 遇到已同步过的记录，后续页只会更旧，可以提前停止。
+          if (newOnly.length < list.length) {
+            hasMore = false;
+            break;
+          }
+        } else {
+          allData.push(...list);
+        }
+
+        hasMore = !!res.data.hasMore;
         nextSeqId = list[list.length - 1]!.seqId;
 
         if (hasMore) await delay(500, 1000);
@@ -128,6 +160,7 @@ export const createGachaApi = (deps: {
     u8_token: string,
     provider: "hypergryph" | "gryphline",
     serverId: string,
+    options?: { stopSeqId?: string },
   ) => {
     // const lang = provider === "gryphline" ? "en-us" : "zh-cn";
     const lang = "zh-cn";
@@ -141,6 +174,7 @@ export const createGachaApi = (deps: {
         { pool_type: poolType },
         { type: "char", poolName },
         lang,
+        options?.stopSeqId || "",
       );
     }
     return await deps.saveUserData(uid, fetched, "char");
@@ -151,6 +185,7 @@ export const createGachaApi = (deps: {
     u8_token: string,
     provider: "hypergryph" | "gryphline",
     serverId: string,
+    options?: { stopSeqIdByPoolId?: Record<string, string> },
   ) => {
     // const lang = provider === "gryphline" ? "en-us" : "zh-cn";
     const lang = "zh-cn";
@@ -187,6 +222,7 @@ export const createGachaApi = (deps: {
         { pool_id: pool.poolId },
         { type: "weapon", poolName: pool.poolName || pool.poolId },
         lang,
+        options?.stopSeqIdByPoolId?.[pool.poolId] || "",
       );
     }
     return await deps.saveUserData(uid, fetched, "weapon");

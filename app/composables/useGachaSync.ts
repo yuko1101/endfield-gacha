@@ -51,8 +51,14 @@ export const useGachaSync = () => {
   } =
     useGachaPoolInfo({ userAgent: user_agent });
 
-  const { charRecords, weaponRecords, loadUserData, saveUserData } =
-    useGachaRecords({ loadPoolInfo });
+  const {
+    charRecords,
+    weaponRecords,
+    loadUserData,
+    saveUserData,
+    getGlobalMaxSeqIdFromRaw,
+    getMaxSeqIdByPoolKeyFromRaw,
+  } = useGachaRecords({ loadPoolInfo });
 
   const {
     getAuthToken,
@@ -172,6 +178,15 @@ export const useGachaSync = () => {
       }
       if (!auth) throw new Error("Token 获取失败，请重新登录");
 
+      const stopSeqId =
+        type === "char"
+          ? await getGlobalMaxSeqIdFromRaw(effectiveUid, "char")
+          : "";
+      const stopSeqIdByPoolId =
+        type === "weapon"
+          ? await getMaxSeqIdByPoolKeyFromRaw(effectiveUid, "weapon")
+          : {};
+
       let count = 0;
       if (type === "char") {
         count = await syncCharacters(
@@ -179,6 +194,7 @@ export const useGachaSync = () => {
           auth.u8Token,
           auth.provider,
           auth.serverId,
+          { stopSeqId },
         );
       } else {
         count = await syncWeapons(
@@ -186,6 +202,7 @@ export const useGachaSync = () => {
           auth.u8Token,
           auth.provider,
           auth.serverId,
+          { stopSeqIdByPoolId },
         );
       }
 
