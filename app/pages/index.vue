@@ -5,6 +5,12 @@
     <p class="text-sm mt-1">请先点击左上角添加账号，或选择一个已有账号。</p>
   </div>
 
+  <div v-else-if="isUserDataLoading" class="text-center text-gray-500 py-16">
+    <div class="mb-2 text-4xl">⏳</div>
+    <p class="text-lg font-medium">正在加载数据...</p>
+    <p class="text-sm mt-1">切换账号时会读取本地记录，请稍等片刻。</p>
+  </div>
+
   <div v-else-if="statistics.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <UCard v-if="selectedSpecialStat" :key="'special-pools'" class="relative">
       <template #header>
@@ -175,6 +181,7 @@ import type { GachaStatistics } from '~/types/gacha'
 
 const { currentUser: uid } = useUserStore()
 const { charStatistics: statistics } = useGachaSync();
+const isUserDataLoading = useState<boolean>('gacha-user-data-loading', () => false)
 
 const isSystem = computed(() => isSystemUid(uid.value))
 const systemLabel = computed(() => systemUidLabel(uid.value || SYSTEM_UID_CN))

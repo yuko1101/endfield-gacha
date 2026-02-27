@@ -66,6 +66,9 @@ const { isWindows, detect: detectPlatform } = usePlatform();
 const { updateHint, checkForUpdate } = useUpdate();
 const route = useRoute()
 const syncMode = ref<'latest' | 'full' | null>(null)
+const isUserDataLoading = useState<boolean>('gacha-user-data-loading', () => false)
+let userDataLoadSeq = 0
+
 const CHARACTER_OROBERYL_PER_PULL = 500
 const WEAPON_ARSENAL_TICKET_PER_TEN_PULL = 1980
 const WEAPON_ARSENAL_TICKET_PER_PULL = WEAPON_ARSENAL_TICKET_PER_TEN_PULL / 10
@@ -143,18 +146,28 @@ const gachaType = computed(() => {
   return currentMainPage.value === '/' ? 'char' : 'weapon'
 })
 
-const loadAllData = (uid: string) => {
-  console.log(`正在加载 UID ${uid} 的所有数据...`);
-  loadCharData(uid);
-  loadWeaponData(uid);
+const loadAllData = async (uidToLoad: string) => {
+  console.log(`正在加载 UID ${uidToLoad} 的所有数据...`);
+  const seq = ++userDataLoadSeq
+  isUserDataLoading.value = true
+  try {
+    await Promise.all([loadCharData(uidToLoad), loadWeaponData(uidToLoad)])
+  } finally {
+    if (seq === userDataLoadSeq && uid.value === uidToLoad) {
+      isUserDataLoading.value = false
+    }
+  }
 }
 
-watch(uid, (newUid) => {
+watch(uid, async (newUid) => {
   if (newUid && newUid !== 'none') {
-    loadAllData(newUid);
+    charRecords.value = {};
+    weaponRecords.value = {};
+    await loadAllData(newUid);
   } else {
     charRecords.value = {};
     weaponRecords.value = {};
+    isUserDataLoading.value = false
   }
 });
 
@@ -168,7 +181,9 @@ onMounted(async () => {
   }
 
   if (uid.value && uid.value !== 'none') {
-    loadAllData(uid.value);
+    charRecords.value = {};
+    weaponRecords.value = {};
+    await loadAllData(uid.value);
   }
 
   checkForUpdate().catch(console.error);
