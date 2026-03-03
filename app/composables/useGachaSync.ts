@@ -1,5 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
-import type { AppConfig } from "~/types/gacha";
+﻿import { invoke } from "@tauri-apps/api/core";
+import type { AppConfig, User } from "~/types/gacha";
 import type { GachaAuth } from "~/composables/gacha";
 import {
   isSystemUid,
@@ -41,6 +41,12 @@ export const useGachaSync = () => {
       title: title,
       description: desc,
     });
+  };
+
+  const extractRoleIdFromUserKey = (userKey: string) => {
+    const sepIndex = userKey.indexOf("_");
+    if (sepIndex < 0 || sepIndex >= userKey.length - 1) return "";
+    return userKey.slice(sepIndex + 1).trim();
   };
 
   const {
@@ -114,6 +120,8 @@ export const useGachaSync = () => {
 
     await detectPlatform();
     await loadPoolInfo();
+    let logSystemUid: string | null = null;
+    let selectedLogUser: User | null = null;
     if (isSystemUid(uid) && !isWindows.value) {
       showToast(
         `${actionLabel}失败`,
@@ -127,13 +135,22 @@ export const useGachaSync = () => {
       const config = await invoke<AppConfig>("read_config");
       const existing = findConfigUserByKey(config, uid);
       if (existing && (!existing.token || existing.source === "log")) {
-        showToast(
-          `无法${actionLabel}`,
-          "该账号来自日志识别，请选择 system(国服) 或 system(国际服) 进行日志同步，或使用“添加账号”登录后再同步。",
-        );
-        return;
+        const provider =
+          existing.provider === "gryphline" ? "gryphline" : "hypergryph";
+        logSystemUid =
+          provider === "gryphline" ? SYSTEM_UID_GLOBAL : SYSTEM_UID_CN;
+        selectedLogUser = existing;
       }
     }
+
+    if (logSystemUid && !isWindows.value) {
+      showToast(
+        `${actionLabel}失败`,
+        "system 账号仅支持 Windows。请通过“添加账号”方式登录后同步。",
+      );
+      return;
+    }
+    const systemSyncUid = isSystemUid(uid) ? uid : logSystemUid;
 
     isSyncing.value = true;
     syncProgress.value = { type, poolName: "", page: 0 };
@@ -148,32 +165,69 @@ export const useGachaSync = () => {
       let effectiveUid = uid;
       let auth: GachaAuth | null = null;
 
-      if (isSystemUid(uid)) {
-        const systemAuth = await getSystemAuthFromLog(uid);
-        const config = await invoke<AppConfig>("read_config");
-        const existing = findConfigUserByKey(
-          config,
-          systemAuth.detectedUserKey,
-        );
-        if (!existing) {
-          await upsertLogUser(systemAuth);
+      if (systemSyncUid) {
+        const systemAuth = await getSystemAuthFromLog(systemSyncUid);
+
+        if (selectedLogUser) {
+          const expectedNickName = String(
+            selectedLogUser.roleId?.nickName || "",
+          ).trim();
+          const expectedUid = String(selectedLogUser.uid || "").trim();
+          const expectedRoleId =
+            String(selectedLogUser.roleId?.roleId || "").trim() ||
+            extractRoleIdFromUserKey(uid);
+          const detectedNickName = String(systemAuth.roleName || "").trim();
+          const detectedUid = String(systemAuth.detectedUid || "").trim();
+          const detectedRoleId = String(systemAuth.detectedRoleId || "").trim();
+
+          const isUidMatched = expectedUid !== "" && expectedUid === detectedUid;
+          const isRoleMatched =
+            expectedRoleId !== "" && expectedRoleId === detectedRoleId;
+
+          if (!isUidMatched || !isRoleMatched) {
+            const expectedDisplay = `${expectedNickName || "unknown"}(${expectedRoleId || "unknown"})`;
+            const detectedDisplay = `${detectedNickName || "unknown"}(${detectedRoleId || "unknown"})`;
+            showToast(
+              `无法${actionLabel}`,
+              `当前账号 ${expectedDisplay} 与当前日志中的账号 ${detectedDisplay} 不一致，请在游戏中打开寻访记录后重试。`,
+            );
+            return;
+          }
+        }
+        if (!selectedLogUser) {
+          const config = await invoke<AppConfig>("read_config");
+          const existing = findConfigUserByKey(
+            config,
+            systemAuth.detectedUserKey,
+          );
+          if (!existing) {
+            await upsertLogUser(systemAuth);
+          } else {
+            await initUserRecord(systemAuth.detectedUserKey);
+          }
+
+          effectiveUid = systemAuth.detectedUserKey;
+          currentUid.value = effectiveUid;
         } else {
-          await initUserRecord(systemAuth.detectedUserKey);
+          effectiveUid = uid;
+          currentUid.value = uid;
         }
 
-        effectiveUid = systemAuth.detectedUserKey;
-        currentUid.value = effectiveUid;
-
         const isMainSystemUid =
-          uid === SYSTEM_UID_CN || uid === SYSTEM_UID_GLOBAL;
+          systemSyncUid === SYSTEM_UID_CN || systemSyncUid === SYSTEM_UID_GLOBAL;
         const isLegacySystemUid =
-          uid === SYSTEM_UID_AUTO ||
-          uid === SYSTEM_UID_OFFICIAL ||
-          uid === SYSTEM_UID_BILIBILI;
+          systemSyncUid === SYSTEM_UID_AUTO ||
+          systemSyncUid === SYSTEM_UID_OFFICIAL ||
+          systemSyncUid === SYSTEM_UID_BILIBILI;
 
         const regionLabel = systemRegionLabel(systemAuth);
 
-        if (isMainSystemUid) {
+        if (selectedLogUser) {
+          showToast(
+            "日志账号校验通过",
+            `开始同步！`,
+          );
+        } else if (isMainSystemUid) {
           const extra =
             systemAuth.provider === "hypergryph"
               ? systemAuth.channelLabel
@@ -185,7 +239,7 @@ export const useGachaSync = () => {
         } else if (isLegacySystemUid) {
           showToast(
             "system 入口已调整",
-            `当前选择的是 ${systemUidLabel(uid)}，本次将按 ${regionLabel} 方式同步`,
+            `当前选择的是 ${systemUidLabel(systemSyncUid)}，本次将按 ${regionLabel} 方式同步`,
           );
         }
 
