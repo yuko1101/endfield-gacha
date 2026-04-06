@@ -444,6 +444,16 @@ fn bundle_to_value(bundle: &AccountBundle) -> Value {
     serde_json::to_value(bundle).unwrap_or_else(|_| json!({}))
 }
 
+fn bundle_to_remote_value(bundle: &AccountBundle) -> Value {
+    json!({
+        "schema_version": bundle.schema_version,
+        "account": bundle.account.clone(),
+        "updatedAt": bundle.updated_at.clone(),
+        "character": bundle.character.clone(),
+        "weapon": bundle.weapon.clone(),
+    })
+}
+
 fn bundle_has_records(bundle: &AccountBundle) -> bool {
     let has_character = bundle
         .character
@@ -497,13 +507,7 @@ fn write_stable_json(value: &Value, output: &mut String) -> Result<(), String> {
 }
 
 fn bundle_hash(bundle: &AccountBundle) -> Result<String, String> {
-    let value = json!({
-        "account": bundle.account.clone(),
-        "character_max_seqid": bundle.character_max_seqid.clone(),
-        "weapon_max_seqid": bundle.weapon_max_seqid.clone(),
-        "character": bundle.character.clone(),
-        "weapon": bundle.weapon.clone(),
-    });
+    let value = bundle_to_remote_value(bundle);
     let mut stable = String::new();
     write_stable_json(&value, &mut stable)?;
     let mut hasher = Sha256::new();
@@ -1325,7 +1329,10 @@ pub async fn webdav_sync_account(user_key: Option<String>) -> Result<WebDavSyncR
         "uploaded" => {
             final_bundle.updated_at = now.clone();
             client
-                .put_json_relative(&account_relative_path(&target_key), &final_bundle)
+                .put_json_relative(
+                    &account_relative_path(&target_key),
+                    &bundle_to_remote_value(&final_bundle),
+                )
                 .await?;
             write_bundle_to_local_record(&target_key, &final_bundle)?;
             match update_manifest_with_bundle(&client, &final_bundle).await {
@@ -1352,7 +1359,10 @@ pub async fn webdav_sync_account(user_key: Option<String>) -> Result<WebDavSyncR
             let remote_bundle = remote_bundle.ok_or_else(|| "远端账号文件不存在".to_string())?;
             let merged = merge_bundles(&local_bundle, &remote_bundle)?;
             client
-                .put_json_relative(&account_relative_path(&target_key), &merged)
+                .put_json_relative(
+                    &account_relative_path(&target_key),
+                    &bundle_to_remote_value(&merged),
+                )
                 .await?;
             write_bundle_to_local_record(&target_key, &merged)?;
             upsert_user_from_bundle(&mut config, &merged, false);
