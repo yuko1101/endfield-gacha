@@ -204,10 +204,13 @@ fn normalize_string(value: &str) -> String {
     value.trim().to_string()
 }
 
-fn normalize_provider(value: &str) -> String {
-    match normalize_string(value).as_str() {
-        "gryphline" => "gryphline".into(),
-        _ => "hypergryph".into(),
+fn normalize_provider(value: &str) -> Result<String, String> {
+    let provider = normalize_string(value);
+    match provider.as_str() {
+        "hypergryph" => Ok("hypergryph".into()),
+        "gryphline" => Ok("gryphline".into()),
+        _ if provider.is_empty() => Err("provider 字段不能为空".into()),
+        _ => Err(format!("provider 字段无效：{}", provider)),
     }
 }
 
@@ -250,9 +253,9 @@ fn get_user_key(user: &AppUser) -> String {
     uid
 }
 
-fn normalize_user(user: &mut AppUser) {
+fn normalize_user(user: &mut AppUser) -> Result<(), String> {
     user.uid = normalize_string(&user.uid);
-    user.provider = normalize_provider(&user.provider);
+    user.provider = normalize_provider(&user.provider)?;
     if user.source.trim().is_empty() {
         user.source = if user.token.trim().is_empty() {
             "log".into()
@@ -267,11 +270,12 @@ fn normalize_user(user: &mut AppUser) {
         role.role_id = normalize_string(&role.role_id);
     }
     user.key = get_user_key(user);
+    Ok(())
 }
 
-fn normalize_config(config: &mut AppConfigData) {
+fn normalize_config(config: &mut AppConfigData) -> Result<(), String> {
     for user in config.users.iter_mut() {
-        normalize_user(user);
+        normalize_user(user)?;
     }
     config.webdav.base_url = normalize_string(&config.webdav.base_url);
     config.webdav.username = normalize_string(&config.webdav.username);
@@ -281,6 +285,7 @@ fn normalize_config(config: &mut AppConfigData) {
         state.last_remote_hash = normalize_string(&state.last_remote_hash);
         state.last_sync_at = normalize_string(&state.last_sync_at);
     }
+    Ok(())
 }
 
 fn load_config_data() -> Result<AppConfigData, String> {
@@ -291,7 +296,7 @@ fn load_config_data() -> Result<AppConfigData, String> {
 
     let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
     let mut config: AppConfigData = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-    normalize_config(&mut config);
+    normalize_config(&mut config)?;
     Ok(config)
 }
 
@@ -345,17 +350,14 @@ fn build_bundle_account(user: &AppUser) -> Result<BundleAccount, String> {
         .clone()
         .ok_or_else(|| "当前账号缺少 roleId，无法写入 WebDAV".to_string())?;
     let role_id = normalize_string(&role.role_id);
-    if user.key.trim().is_empty()
-        || user.uid.trim().is_empty()
-        || role_id.is_empty()
-        || user.provider.trim().is_empty()
-    {
+    let provider = normalize_provider(&user.provider)?;
+    if user.key.trim().is_empty() || user.uid.trim().is_empty() || role_id.is_empty() {
         return Err("当前账号缺少关键字段，无法写入 WebDAV".into());
     }
 
     Ok(BundleAccount {
         key: normalize_string(&user.key),
-        provider: normalize_provider(&user.provider),
+        provider,
         uid: normalize_string(&user.uid),
         role_id: UserRoleMeta {
             server_id: normalize_string(&role.server_id),
@@ -426,7 +428,7 @@ fn validate_bundle(bundle: &AccountBundle) -> Result<(), String> {
 
 fn parse_bundle_text(text: &str) -> Result<AccountBundle, String> {
     let mut bundle: AccountBundle = serde_json::from_str(text).map_err(|e| e.to_string())?;
-    bundle.account.provider = normalize_provider(&bundle.account.provider);
+    bundle.account.provider = normalize_provider(&bundle.account.provider)?;
     bundle.account.key = normalize_string(&bundle.account.key);
     bundle.account.uid = normalize_string(&bundle.account.uid);
     bundle.account.role_id.role_id = normalize_string(&bundle.account.role_id.role_id);
@@ -680,10 +682,7 @@ fn merge_record_lists(local: &[Value], remote: &[Value]) -> Result<Vec<Value>, S
                 let current_normalized = normalize_record_for_conflict_compare(&current);
                 let candidate_normalized = normalize_record_for_conflict_compare(item);
                 if current_normalized != candidate_normalized {
-                    return Err(format!(
-                        "抽卡记录 seqId ({}) 存在字段差异",
-                        seq_id
-                    ));
+                    return Err(format!("抽卡记录 seqId ({}) 存在字段差异", seq_id));
                 }
                 merged[index].1 = pick_richer_record(&current, item);
             } else {
@@ -862,7 +861,11 @@ fn build_manifest_from_bundles(bundles: &[AccountBundle]) -> Result<ManifestFile
     Ok(manifest)
 }
 
-fn upsert_user_from_bundle(config: &mut AppConfigData, bundle: &AccountBundle, restored: bool) {
+fn upsert_user_from_bundle(
+    config: &mut AppConfigData,
+    bundle: &AccountBundle,
+    restored: bool,
+) -> Result<(), String> {
     let key = bundle.account.key.clone();
     if let Some(user) = config
         .users
@@ -892,8 +895,8 @@ fn upsert_user_from_bundle(config: &mut AppConfigData, bundle: &AccountBundle, r
                 "log".into()
             };
         }
-        normalize_user(user);
-        return;
+        normalize_user(user)?;
+        return Ok(());
     }
 
     let mut user = AppUser {
@@ -904,8 +907,9 @@ fn upsert_user_from_bundle(config: &mut AppConfigData, bundle: &AccountBundle, r
         role_id: Some(bundle.account.role_id.clone()),
         source: "remote".into(),
     };
-    normalize_user(&mut user);
+    normalize_user(&mut user)?;
     config.users.push(user);
+    Ok(())
 }
 
 fn account_relative_path(user_key: &str) -> String {
@@ -1466,7 +1470,7 @@ pub async fn webdav_sync_account(user_key: Option<String>) -> Result<WebDavSyncR
         "downloaded" => {
             let remote_bundle = remote_bundle.ok_or_else(|| "远端账号文件不存在".to_string())?;
             write_bundle_to_local_record(&target_key, &remote_bundle)?;
-            upsert_user_from_bundle(&mut config, &remote_bundle, false);
+            upsert_user_from_bundle(&mut config, &remote_bundle, false)?;
             let hash = bundle_hash(&remote_bundle)?;
             final_bundle = remote_bundle;
             local_changed = true;
@@ -1492,7 +1496,7 @@ pub async fn webdav_sync_account(user_key: Option<String>) -> Result<WebDavSyncR
                 )
                 .await?;
             write_bundle_to_local_record(&target_key, &merged)?;
-            upsert_user_from_bundle(&mut config, &merged, false);
+            upsert_user_from_bundle(&mut config, &merged, false)?;
             match update_manifest_with_bundle(&client, &merged).await {
                 Ok(warning) => {
                     manifest_updated = true;
@@ -1621,7 +1625,7 @@ pub async fn webdav_restore_accounts(keys: Vec<String>) -> Result<WebDavRestoreR
         };
         let bundle = parse_bundle_text(&text).map_err(|_| format!("远端账号文件损坏：{}", key))?;
         write_bundle_to_local_record(&bundle.account.key, &bundle)?;
-        upsert_user_from_bundle(&mut config, &bundle, true);
+        upsert_user_from_bundle(&mut config, &bundle, true)?;
         let hash = bundle_hash(&bundle)?;
         config.webdav_state.insert(
             bundle.account.key.clone(),
