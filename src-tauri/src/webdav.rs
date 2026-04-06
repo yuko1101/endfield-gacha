@@ -785,10 +785,10 @@ fn merge_account_meta(
 
 fn validate_identity(local: &AccountBundle, remote: &AccountBundle) -> Result<(), String> {
     if local.account.key != remote.account.key {
-        return Err("同一个 key 下账号身份不一致".into());
+        return Err("key 不一致".into());
     }
     if local.account.uid != remote.account.uid {
-        return Err("同一个 key 下 uid 不一致".into());
+        return Err("UID 不一致".into());
     }
     if local.account.provider != remote.account.provider {
         return Err("provider 不一致".into());
