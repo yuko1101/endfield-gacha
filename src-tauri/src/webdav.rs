@@ -377,6 +377,12 @@ fn build_local_bundle(user: &AppUser) -> Result<AccountBundle, String> {
     let full_data = load_local_record_value(&user.key)?;
     let character = normalize_record_object(full_data.get("character").unwrap_or(&json!({})));
     let weapon = normalize_record_object(full_data.get("weapon").unwrap_or(&json!({})));
+    let updated_at = full_data
+        .get("updatedAt")
+        .and_then(|value| value.as_str())
+        .map(normalize_string)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(now_iso_string);
 
     let character_max_seqid = full_data
         .get("character_max_seqid")
@@ -394,7 +400,7 @@ fn build_local_bundle(user: &AppUser) -> Result<AccountBundle, String> {
     Ok(AccountBundle {
         schema_version: 1,
         account: build_bundle_account(user)?,
-        updated_at: now_iso_string(),
+        updated_at,
         character_max_seqid,
         weapon_max_seqid,
         character,
@@ -458,12 +464,26 @@ fn bundle_has_records(bundle: &AccountBundle) -> bool {
     let has_character = bundle
         .character
         .as_object()
-        .map(|obj| obj.values().any(|value| value.as_array().map(|list| !list.is_empty()).unwrap_or(false)))
+        .map(|obj| {
+            obj.values().any(|value| {
+                value
+                    .as_array()
+                    .map(|list| !list.is_empty())
+                    .unwrap_or(false)
+            })
+        })
         .unwrap_or(false);
     let has_weapon = bundle
         .weapon
         .as_object()
-        .map(|obj| obj.values().any(|value| value.as_array().map(|list| !list.is_empty()).unwrap_or(false)))
+        .map(|obj| {
+            obj.values().any(|value| {
+                value
+                    .as_array()
+                    .map(|list| !list.is_empty())
+                    .unwrap_or(false)
+            })
+        })
         .unwrap_or(false);
     has_character || has_weapon
 }
@@ -473,7 +493,9 @@ fn write_stable_json(value: &Value, output: &mut String) -> Result<(), String> {
         Value::Null => output.push_str("null"),
         Value::Bool(flag) => output.push_str(if *flag { "true" } else { "false" }),
         Value::Number(number) => output.push_str(&number.to_string()),
-        Value::String(text) => output.push_str(&serde_json::to_string(text).map_err(|e| e.to_string())?),
+        Value::String(text) => {
+            output.push_str(&serde_json::to_string(text).map_err(|e| e.to_string())?)
+        }
         Value::Array(items) => {
             output.push('[');
             for (index, item) in items.iter().enumerate() {
@@ -513,7 +535,10 @@ fn bundle_hash(bundle: &AccountBundle) -> Result<String, String> {
     let mut hasher = Sha256::new();
     hasher.update(stable.as_bytes());
     let digest = hasher.finalize();
-    let hash = digest.iter().map(|byte| format!("{:02x}", byte)).collect::<String>();
+    let hash = digest
+        .iter()
+        .map(|byte| format!("{:02x}", byte))
+        .collect::<String>();
     Ok(format!("sha256:{}", hash))
 }
 
@@ -614,6 +639,27 @@ fn record_score(value: &Value) -> usize {
         .unwrap_or(0)
 }
 
+fn normalize_record_for_conflict_compare(value: &Value) -> Value {
+    let Some(obj) = value.as_object() else {
+        return value.clone();
+    };
+
+    let mut normalized = Map::new();
+    let mut keys: Vec<_> = obj.keys().cloned().collect();
+    keys.sort();
+
+    for key in keys {
+        if matches!(key.as_str(), "charName" | "weaponName" | "poolName") {
+            continue;
+        }
+        if let Some(item) = obj.get(&key) {
+            normalized.insert(key, item.clone());
+        }
+    }
+
+    Value::Object(normalized)
+}
+
 fn pick_richer_record(current: &Value, candidate: &Value) -> Value {
     if record_score(candidate) >= record_score(current) {
         candidate.clone()
@@ -622,15 +668,23 @@ fn pick_richer_record(current: &Value, candidate: &Value) -> Value {
     }
 }
 
-fn merge_record_lists(local: &[Value], remote: &[Value]) -> Vec<Value> {
+fn merge_record_lists(local: &[Value], remote: &[Value]) -> Result<Vec<Value>, String> {
     let mut merged: Vec<(String, Value)> = Vec::new();
     let mut seq_index: HashMap<String, usize> = HashMap::new();
 
-    let mut push_item = |item: &Value| {
+    let mut push_item = |item: &Value| -> Result<(), String> {
         let seq_id = item.get("seqId").and_then(value_to_seqid);
         if let Some(seq_id) = seq_id {
             if let Some(index) = seq_index.get(&seq_id).copied() {
                 let current = merged[index].1.clone();
+                let current_normalized = normalize_record_for_conflict_compare(&current);
+                let candidate_normalized = normalize_record_for_conflict_compare(item);
+                if current_normalized != candidate_normalized {
+                    return Err(format!(
+                        "抽卡记录 seqId ({}) 存在字段差异",
+                        seq_id
+                    ));
+                }
                 merged[index].1 = pick_richer_record(&current, item);
             } else {
                 seq_index.insert(seq_id.clone(), merged.len());
@@ -640,25 +694,32 @@ fn merge_record_lists(local: &[Value], remote: &[Value]) -> Vec<Value> {
             let synthetic_key = format!("__missing__{}", merged.len());
             merged.push((synthetic_key, item.clone()));
         }
+        Ok(())
     };
 
     for item in local {
-        push_item(item);
+        push_item(item)?;
     }
     for item in remote {
-        push_item(item);
+        push_item(item)?;
     }
 
     merged.sort_by(|a, b| {
-        let a_seq = a.1.get("seqId").and_then(value_to_seqid).unwrap_or_default();
-        let b_seq = b.1.get("seqId").and_then(value_to_seqid).unwrap_or_default();
+        let a_seq =
+            a.1.get("seqId")
+                .and_then(value_to_seqid)
+                .unwrap_or_default();
+        let b_seq =
+            b.1.get("seqId")
+                .and_then(value_to_seqid)
+                .unwrap_or_default();
         compare_seqid(&b_seq, &a_seq)
     });
 
-    merged.into_iter().map(|(_, value)| value).collect()
+    Ok(merged.into_iter().map(|(_, value)| value).collect())
 }
 
-fn merge_record_maps(local: &Value, remote: &Value) -> Value {
+fn merge_record_maps(local: &Value, remote: &Value) -> Result<Value, String> {
     let mut keys = BTreeSet::new();
     if let Some(obj) = local.as_object() {
         keys.extend(obj.keys().cloned());
@@ -679,10 +740,10 @@ fn merge_record_maps(local: &Value, remote: &Value) -> Value {
             .and_then(|value| value.as_array())
             .cloned()
             .unwrap_or_default();
-        let merged = merge_record_lists(&local_items, &remote_items);
+        let merged = merge_record_lists(&local_items, &remote_items)?;
         result.insert(key, Value::Array(merged));
     }
-    Value::Object(result)
+    Ok(Value::Object(result))
 }
 
 fn choose_recent_non_empty(primary: &str, secondary: &str) -> String {
@@ -714,7 +775,10 @@ fn merge_account_meta(
             role_id: local.role_id.role_id.clone(),
             nick_name: choose_recent_non_empty(primary_name, secondary_name),
             server_id: choose_recent_non_empty(&remote.role_id.server_id, &local.role_id.server_id),
-            server_name: choose_recent_non_empty(&remote.role_id.server_name, &local.role_id.server_name),
+            server_name: choose_recent_non_empty(
+                &remote.role_id.server_name,
+                &local.role_id.server_name,
+            ),
         },
     }
 }
@@ -735,10 +799,16 @@ fn validate_identity(local: &AccountBundle, remote: &AccountBundle) -> Result<()
     Ok(())
 }
 
+fn validate_record_conflicts(local: &AccountBundle, remote: &AccountBundle) -> Result<(), String> {
+    merge_record_maps(&local.character, &remote.character)?;
+    merge_record_maps(&local.weapon, &remote.weapon)?;
+    Ok(())
+}
+
 fn merge_bundles(local: &AccountBundle, remote: &AccountBundle) -> Result<AccountBundle, String> {
     validate_identity(local, remote)?;
-    let character = merge_record_maps(&local.character, &remote.character);
-    let weapon = merge_record_maps(&local.weapon, &remote.weapon);
+    let character = merge_record_maps(&local.character, &remote.character)?;
+    let weapon = merge_record_maps(&local.weapon, &remote.weapon)?;
     Ok(AccountBundle {
         schema_version: 1,
         account: merge_account_meta(
@@ -755,7 +825,11 @@ fn merge_bundles(local: &AccountBundle, remote: &AccountBundle) -> Result<Accoun
     })
 }
 
-fn save_conflict_snapshots(user_key: &str, local_value: &Value, remote_value: &Value) -> Result<(), String> {
+fn save_conflict_snapshots(
+    user_key: &str,
+    local_value: &Value,
+    remote_value: &Value,
+) -> Result<(), String> {
     let dir = get_userdata_dir()?.join("webdavConflicts");
     if !dir.exists() {
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -790,7 +864,11 @@ fn build_manifest_from_bundles(bundles: &[AccountBundle]) -> Result<ManifestFile
 
 fn upsert_user_from_bundle(config: &mut AppConfigData, bundle: &AccountBundle, restored: bool) {
     let key = bundle.account.key.clone();
-    if let Some(user) = config.users.iter_mut().find(|item| get_user_key(item) == key) {
+    if let Some(user) = config
+        .users
+        .iter_mut()
+        .find(|item| get_user_key(item) == key)
+    {
         let preserved_token = user.token.clone();
         let preserved_source = normalize_string(&user.source);
         user.key = key.clone();
@@ -836,12 +914,15 @@ fn account_relative_path(user_key: &str) -> String {
 
 impl WebDavClient {
     fn new(config: &WebDavConfigData) -> Result<Self, String> {
-        let base_url = normalize_string(&config.base_url).trim_end_matches('/').to_string();
+        let base_url = normalize_string(&config.base_url)
+            .trim_end_matches('/')
+            .to_string();
         let username = normalize_string(&config.username);
         let password = config.password.clone();
         let base_path = normalize_base_path(&config.base_path);
 
-        if base_url.is_empty() || username.is_empty() || password.is_empty() || base_path.is_empty() {
+        if base_url.is_empty() || username.is_empty() || password.is_empty() || base_path.is_empty()
+        {
             return Err("请先填写完整的 WebDAV 配置".into());
         }
 
@@ -932,16 +1013,24 @@ impl WebDavClient {
 
     async fn ensure_structure(&self) -> Result<(), String> {
         let mut current = String::new();
-        for segment in self.base_path.trim_start_matches('/').split('/').filter(|item| !item.is_empty()) {
+        for segment in self
+            .base_path
+            .trim_start_matches('/')
+            .split('/')
+            .filter(|item| !item.is_empty())
+        {
             current.push('/');
             current.push_str(segment);
             self.ensure_collection_absolute(&current).await?;
         }
-        self.ensure_collection_absolute(&format!("{}/accounts", self.base_path)).await
+        self.ensure_collection_absolute(&format!("{}/accounts", self.base_path))
+            .await
     }
 
     async fn get_text_relative(&self, relative_path: &str) -> Result<Option<String>, String> {
-        let response = self.send(Method::GET, self.url_for_relative(relative_path)).await?;
+        let response = self
+            .send(Method::GET, self.url_for_relative(relative_path))
+            .await?;
         match response.status() {
             StatusCode::OK => response.text().await.map(Some).map_err(|e| e.to_string()),
             StatusCode::NOT_FOUND => Ok(None),
@@ -949,7 +1038,11 @@ impl WebDavClient {
         }
     }
 
-    async fn put_json_relative<T: Serialize>(&self, relative_path: &str, payload: &T) -> Result<(), String> {
+    async fn put_json_relative<T: Serialize>(
+        &self,
+        relative_path: &str,
+        payload: &T,
+    ) -> Result<(), String> {
         let body = serde_json::to_string_pretty(payload).map_err(|e| e.to_string())?;
         let response = self
             .client
@@ -991,7 +1084,9 @@ impl WebDavClient {
         let mut candidate_paths = Vec::new();
         if let Some(manifest) = manifest {
             if let Some(entry) = manifest.accounts.get(user_key) {
-                let path = normalize_string(&entry.path).trim_start_matches('/').to_string();
+                let path = normalize_string(&entry.path)
+                    .trim_start_matches('/')
+                    .to_string();
                 if !path.is_empty() {
                     candidate_paths.push(path);
                 }
@@ -1125,7 +1220,10 @@ async fn scan_remote_bundles(client: &WebDavClient) -> Result<Vec<AccountBundle>
     Ok(bundles)
 }
 
-async fn update_manifest_with_bundle(client: &WebDavClient, bundle: &AccountBundle) -> Result<Option<String>, String> {
+async fn update_manifest_with_bundle(
+    client: &WebDavClient,
+    bundle: &AccountBundle,
+) -> Result<Option<String>, String> {
     let state = client.load_manifest_state().await?;
     let mut warning = None;
     let mut manifest = match state {
@@ -1183,7 +1281,9 @@ pub async fn webdav_test_connection() -> Result<Value, String> {
     let manifest = match client.load_manifest_state().await? {
         ManifestLoadState::Existing(manifest) => manifest,
         ManifestLoadState::Missing => default_manifest(),
-        ManifestLoadState::Invalid => return Err("远端 manifest.json 结构错误，请先修复后再重试".into()),
+        ManifestLoadState::Invalid => {
+            return Err("远端 manifest.json 结构错误，请先修复后再重试".into())
+        }
     };
 
     client.put_json_relative("manifest.json", &manifest).await?;
@@ -1238,7 +1338,11 @@ pub async fn webdav_sync_account(user_key: Option<String>) -> Result<WebDavSyncR
                     "parseError": error,
                     "rawText": text,
                 });
-                let _ = save_conflict_snapshots(&target_key, &bundle_to_value(&local_bundle), &remote_value);
+                let _ = save_conflict_snapshots(
+                    &target_key,
+                    &bundle_to_value(&local_bundle),
+                    &remote_value,
+                );
                 return Err("检测到账号冲突，已暂停同步：远端账号文件结构损坏".into());
             }
         }
@@ -1253,7 +1357,15 @@ pub async fn webdav_sync_account(user_key: Option<String>) -> Result<WebDavSyncR
                 &bundle_to_value(&local_bundle),
                 &bundle_to_value(remote_bundle),
             );
-            return Err(format!("检测到账号冲突，已暂停同步：{}", error));
+            return Err(format!("存在账号冲突，已暂停同步：{}", error));
+        }
+        if let Err(error) = validate_record_conflicts(&local_bundle, remote_bundle) {
+            let _ = save_conflict_snapshots(
+                &target_key,
+                &bundle_to_value(&local_bundle),
+                &bundle_to_value(remote_bundle),
+            );
+            return Err(format!("存在账号冲突，已暂停同步：{}", error));
         }
     }
 
@@ -1283,7 +1395,12 @@ pub async fn webdav_sync_account(user_key: Option<String>) -> Result<WebDavSyncR
     };
 
     let action = if !has_previous_state {
-        decide_without_state(&local_bundle, remote_bundle.as_ref(), &local_hash, &remote_hash)
+        decide_without_state(
+            &local_bundle,
+            remote_bundle.as_ref(),
+            &local_hash,
+            &remote_hash,
+        )
     } else if remote_bundle.is_none() {
         "uploaded".to_string()
     } else if local_hash == state.last_local_hash && remote_hash == state.last_remote_hash {
@@ -1357,7 +1474,17 @@ pub async fn webdav_sync_account(user_key: Option<String>) -> Result<WebDavSyncR
         }
         "merged" => {
             let remote_bundle = remote_bundle.ok_or_else(|| "远端账号文件不存在".to_string())?;
-            let merged = merge_bundles(&local_bundle, &remote_bundle)?;
+            let merged = match merge_bundles(&local_bundle, &remote_bundle) {
+                Ok(merged) => merged,
+                Err(error) => {
+                    let _ = save_conflict_snapshots(
+                        &target_key,
+                        &bundle_to_value(&local_bundle),
+                        &bundle_to_value(&remote_bundle),
+                    );
+                    return Err(format!("检测到账号冲突，已暂停同步：{}", error));
+                }
+            };
             client
                 .put_json_relative(
                     &account_relative_path(&target_key),
@@ -1427,7 +1554,10 @@ pub async fn webdav_list_restore_accounts() -> Result<Vec<WebDavRestoreAccount>,
 
     if let ManifestLoadState::Existing(manifest) = &manifest_state {
         for key in manifest.accounts.keys() {
-            let Some((_path, text)) = client.download_account_text_for_key(key, Some(manifest)).await? else {
+            let Some((_path, text)) = client
+                .download_account_text_for_key(key, Some(manifest))
+                .await?
+            else {
                 continue;
             };
             if let Ok(bundle) = parse_bundle_text(&text) {
@@ -1485,7 +1615,8 @@ pub async fn webdav_restore_accounts(keys: Vec<String>) -> Result<WebDavRestoreR
     let mut restored = Vec::new();
 
     for key in selected_keys {
-        let Some((_path, text)) = client.download_account_text_for_key(&key, manifest).await? else {
+        let Some((_path, text)) = client.download_account_text_for_key(&key, manifest).await?
+        else {
             return Err(format!("远端账号文件不存在：{}", key));
         };
         let bundle = parse_bundle_text(&text).map_err(|_| format!("远端账号文件损坏：{}", key))?;

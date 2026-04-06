@@ -148,6 +148,22 @@ export const useWebDav = () => {
     return result;
   };
 
+  const formatAccountFailureLabel = (accountKey: string) => {
+    const normalizedKey = String(accountKey || "").trim();
+    if (!normalizedKey) return normalizedKey;
+
+    const matchedUser = userList.value.find((user) => String(getUserKey(user) || "").trim() === normalizedKey);
+    if (!matchedUser) return normalizedKey;
+
+    const roleName = String(matchedUser.roleId?.nickName || "").trim();
+    const roleId = String(matchedUser.roleId?.roleId || "").trim();
+    if (roleName && roleId) {
+      return `${roleName}(${roleId})`;
+    }
+
+    return String(matchedUser.uid || "").trim() || normalizedKey;
+  };
+
   const syncAllAccounts = async () => {
     if (!isConfigured.value) {
       throw new Error("请先填写完整的 WebDAV 配置");
@@ -218,7 +234,7 @@ export const useWebDav = () => {
     if (firstFailure) {
       toast.add({
         title: "存在同步失败账号",
-        description: `${firstFailure.accountKey}: ${firstFailure.message}`,
+        description: `${formatAccountFailureLabel(firstFailure.accountKey)} ${firstFailure.message}`,
         color: "warning",
       });
     }
