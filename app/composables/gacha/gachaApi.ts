@@ -266,7 +266,7 @@ export const createGachaApi = (deps: {
     options?: { stopSeqId?: string },
   ): Promise<SyncResult> => {
     // const lang = provider === "gryphline" ? "en-us" : "zh-cn";
-    const lang = "zh-cn";
+    const lang = "ja-jp";
     const fetched: Record<string, EndFieldCharInfo[]> = {};
     const poolResults: {
       poolName: string;
@@ -317,7 +317,7 @@ export const createGachaApi = (deps: {
     options?: { stopSeqId?: string },
   ): Promise<SyncResult> => {
     // const lang = provider === "gryphline" ? "en-us" : "zh-cn";
-    const lang = "zh-cn";
+    const lang = "ja-jp";
     deps.syncProgress.value = {
       type: "weapon",
       poolName: "武器プール一覧を取得中",
