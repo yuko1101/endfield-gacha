@@ -1,5 +1,5 @@
 <template>
-  <USelect v-model="uid" :items="uidList" placeholder="选择账号" :disabled="uidList.length === 0" />
+  <USelect v-model="uid" :items="uidList" placeholder="アカウントを選択" :disabled="uidList.length === 0" />
 </template>
 
 <script setup lang="ts">

@@ -1,14 +1,14 @@
 <template>
   <div v-if="uid === 'none' || !uid" class="text-center text-gray-500 py-16">
     <div class="mb-2 text-4xl">👋</div>
-    <p class="text-lg font-medium">欢迎使用</p>
-    <p class="text-sm mt-1">请先点击左上角添加账号，或选择一个已有账号。</p>
+    <p class="text-lg font-medium">ようこそ</p>
+    <p class="text-sm mt-1">左上の「アカウント追加」を押すか、既存アカウントを選択してください。</p>
   </div>
 
   <div v-else-if="isUserDataLoading" class="text-center text-gray-500 py-16">
     <div class="mb-2 text-4xl">⏳</div>
-    <p class="text-lg font-medium">正在加载数据...</p>
-    <p class="text-sm mt-1">切换账号时会读取本地记录，请稍等片刻。</p>
+    <p class="text-lg font-medium">データを読み込み中...</p>
+    <p class="text-sm mt-1">アカウント切替時にローカル記録を読み込みます。しばらくお待ちください。</p>
   </div>
 
   <div v-else-if="statistics.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -16,18 +16,18 @@
       <template #header>
         <div class="flex justify-between items-start gap-3">
           <div class="min-w-0">
-            <h3 class="text-lg font-bold truncate">特许寻访</h3>
+            <h3 class="text-lg font-bold truncate">特別スカウト</h3>
           </div>
 
           <div class="flex flex-col items-end gap-1 shrink-0">
-            <USelect v-model="selectedSpecialPoolId" :items="specialPoolOptions" placeholder="选择限定池" size="sm"
+            <USelect v-model="selectedSpecialPoolId" :items="specialPoolOptions" placeholder="限定プールを選択" size="sm"
               class="w-44" />
           </div>
         </div>
       </template>
 
       <div class="absolute top-18 right-3 flex flex-col gap-1">
-        <UBadge variant="outline">当前已垫: {{ selectedSpecialStat.pityCount }} 抽</UBadge>
+        <UBadge variant="outline">現在の天井カウント: {{ selectedSpecialStat.pityCount }} 抽</UBadge>
         <UBadge
           v-if="
             !isAllSpecialSelected &&
@@ -35,8 +35,8 @@
             selectedSpecialStat.bigPityMax !== undefined
           "
           :variant="(selectedSpecialStat.gotUp6) ? 'solid' : 'outline'">
-          <span v-if="selectedSpecialStat.gotUp6">已获得当期 UP</span>
-          <span v-else>大保底: {{ selectedSpecialStat.bigPityMax - selectedSpecialStat.bigPityRemaining }} / {{
+          <span v-if="selectedSpecialStat.gotUp6">当期UP獲得済み</span>
+          <span v-else>大天井: {{ selectedSpecialStat.bigPityMax - selectedSpecialStat.bigPityRemaining }} / {{
             selectedSpecialStat.bigPityMax }}</span>
         </UBadge>
       </div>
@@ -45,7 +45,7 @@
 
       <div class="space-y-2 text-sm">
         <div class="flex justify-between border-b pb-1">
-          <span>总抽数:</span> <span>{{ selectedSpecialStat.totalPulls }}</span>
+          <span>総回数:</span> <span>{{ selectedSpecialStat.totalPulls }}</span>
         </div>
 
         <div v-for="row in getStarRows(selectedSpecialStat)" :key="row.label"
@@ -53,23 +53,23 @@
           <span :class="['font-bold', row.color]">{{ row.label }}</span>
 
           <span class="text-gray-600 dark:text-gray-300">
-            共 {{ row.count }} 个
+            合計 {{ row.count }} 件
           </span>
 
           <span class="text-gray-500">
-            占 {{ getPercent(row.count, selectedSpecialStat.totalPulls) }}%
+            割合 {{ getPercent(row.count, selectedSpecialStat.totalPulls) }}%
           </span>
 
           <span class="text-gray-500">
-            平均 {{ getAvg(row.count, selectedSpecialStat.totalPulls) }} 抽/个
+            平均 {{ getAvg(row.count, selectedSpecialStat.totalPulls) }} 連/件
           </span>
         </div>
 
         <div class="mt-3">
           <p class="font-semibold mb-2 text-gray-500 text-xs">
-            6★ 历史记录:
+            ★6 履歴:
             <span class="font-normal text-gray-400">
-              出卡数 {{ selectedSpecialHistory6Count }} 次 · 歪 {{ selectedSpecialOffCount }} 次
+              ★6出現 {{ selectedSpecialHistory6Count }} 回 · すり抜け {{ selectedSpecialOffCount }} 回
             </span>
           </p>
 
@@ -80,7 +80,7 @@
                 {{ rec.name }}
               </span>
 
-              <span class="text-gray-400">[{{ rec.isFree ? '加急招募' : rec.pity }}]</span>
+              <span class="text-gray-400">[{{ rec.isFree ? '無料募集' : rec.pity }}]</span>
               <span v-if="rec.isNew" class="text-red-500 font-bold ml-0.5 text-[10px]">
                 [NEW]
               </span>
@@ -92,13 +92,13 @@
                   transform="rotate(15, 150, 150)"
                   font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif"
                   font-weight="bold" font-size="180" text-anchor="middle" dominant-baseline="central"
-                  fill="white">歪</text>
+                  fill="white">すり抜け</text>
               </svg>
             </div>
           </div>
 
           <div v-else class="text-xs text-gray-400 italic">
-            暂无6星记录
+            ★6記録なし
           </div>
         </div>
       </div>
@@ -109,7 +109,7 @@
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-bold">{{ stat.poolName }}</h3>
           <UBadge>
-            当前已垫: {{ stat.pityCount }} 抽
+            現在の天井カウント: {{ stat.pityCount }} 抽
           </UBadge>
         </div>
       </template>
@@ -118,7 +118,7 @@
 
       <div class="space-y-2 text-sm">
         <div class="flex justify-between border-b pb-1">
-          <span>总抽数:</span> <span>{{ stat.totalPulls }}</span>
+          <span>総回数:</span> <span>{{ stat.totalPulls }}</span>
         </div>
 
         <div v-for="row in getStarRows(stat)" :key="row.label"
@@ -126,20 +126,20 @@
           <span :class="['font-bold', row.color]">{{ row.label }}</span>
 
           <span class="text-gray-600 dark:text-gray-300">
-            共 {{ row.count }} 个
+            合計 {{ row.count }} 件
           </span>
 
           <span class="text-gray-500">
-            占 {{ getPercent(row.count, stat.totalPulls) }}%
+            割合 {{ getPercent(row.count, stat.totalPulls) }}%
           </span>
 
           <span class="text-gray-500">
-            平均 {{ getAvg(row.count, stat.totalPulls) }} 抽/个
+            平均 {{ getAvg(row.count, stat.totalPulls) }} 連/件
           </span>
         </div>
 
         <div class="mt-3">
-          <p class="font-semibold mb-2 text-gray-500 text-xs">6★ 历史记录:</p>
+          <p class="font-semibold mb-2 text-gray-500 text-xs">★6 履歴:</p>
 
           <div v-if="stat.history6.length > 0" class="flex flex-wrap gap-2">
             <div v-for="(rec, idx) in [...stat.history6].reverse()" :key="idx"
@@ -157,7 +157,7 @@
           </div>
 
           <div v-else class="text-xs text-gray-400 italic">
-            暂无6星记录
+            ★6記録なし
           </div>
         </div>
       </div>
@@ -166,12 +166,12 @@
 
   <div v-else-if="isSystem && statistics.length <= 0" class="text-center text-gray-500 py-16">
     <div class="mb-2 text-4xl">👋</div>
-    <p class="text-lg font-medium mt-5">欢迎使用 Endfield Gacha !</p>
-    <p class="text-sm mt-3">当前选择的账号为 <b>{{ systemLabel }}</b> ，即从客户端 WebView 日志中获取寻访记录数据。</p>
-    <p class="text-sm mt-1">请先在游戏内打开一次抽卡记录页，再点击“同步最新数据”。</p>
+    <p class="text-lg font-medium mt-5">ようこそ Endfield Gacha !</p>
+    <p class="text-sm mt-3">現在選択中のアカウントは <b>{{ systemLabel }}</b> です。クライアントのWebViewログからスカウト記録を取得します。</p>
+    <p class="text-sm mt-1">先にゲーム内でガチャ履歴ページを開いてから「最新データを同期」を押してください。</p>
   </div>
   <div v-else class="text-center text-gray-500 py-10">
-    暂无角色数据，请点击“同步最新数据”获取。
+    キャラデータがありません。「最新データを同期」を押してください。
   </div>
 </template>
 
@@ -200,7 +200,7 @@ const otherStats = computed(() =>
 
 const specialPoolOptions = computed(() =>
   [
-    ...(specialStats.value.length > 1 ? [{ label: '全部', value: ALL_SPECIAL_VALUE }] : []),
+    ...(specialStats.value.length > 1 ? [{ label: 'すべて', value: ALL_SPECIAL_VALUE }] : []),
     ...specialStats.value.map((s) => ({
       label: s.poolName,
       value: s.poolId || s.poolName,
@@ -226,7 +226,7 @@ watch(
       return
     }
 
-    // 当存在多个特许池时默认选“全部”
+    // 当存在多个特许池时默认选“すべて”
     if (!selectedKey) {
       if (list.length > 1) {
         selectedSpecialPoolId.value = ALL_SPECIAL_VALUE
@@ -265,7 +265,7 @@ const allSpecialStat = computed<GachaStatistics | undefined>(() => {
 
   return {
     poolType: SPECIAL_POOL_TYPE,
-    poolName: '全部',
+    poolName: 'すべて',
     totalPulls,
     pityCount: current.pityCount || 0,
     count6,

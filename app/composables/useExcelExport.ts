@@ -6,13 +6,13 @@ type ExportCell = string | number;
 type ExportRow = ExportCell[];
 
 const EXPORT_HEADERS = [
-  "时间",
+  "時刻",
   "名称",
-  "星级",
-  "卡池名",
-  "卡池 ID",
-  "是否 NEW",
-  "是否为加急招募",
+  "レア度",
+  "プール名",
+  "プール ID",
+  "NEW",
+  "無料募集",
   "seqId",
 ] as const;
 
@@ -33,7 +33,7 @@ const compareSeqId = (a: string, b: string) => {
   return a.localeCompare(b);
 };
 
-// gachaTs 在接口里是字符串，导出时统一按本地 24 小时制格式化。
+// gachaTs（ガチャ時刻）は文字列のため、出力時はローカルの24時間表記に統一する。
 const normalizeTimestampMs = (value?: string) => {
   const raw = String(value || "").trim();
   if (!raw || !isDigitsOnly(raw)) return null;
@@ -73,7 +73,7 @@ const sortRecordsDesc = <T extends { gachaTs?: string; seqId?: string }>(records
 const flattenRecordMap = <T>(recordMap: Record<string, T[]>) =>
   Object.values(recordMap || {}).flatMap((list) => (Array.isArray(list) ? list : []));
 
-const toYesNo = (value?: boolean) => (value ? "是" : "否");
+const toYesNo = (value?: boolean) => (value ? "はい" : "いいえ");
 
 const toCharRows = (records: Record<string, EndFieldCharInfo[]>) =>
   sortRecordsDesc(flattenRecordMap(records)).map<ExportRow>((item) => [
@@ -95,7 +95,7 @@ const toWeaponRows = (records: Record<string, EndFieldWeaponInfo[]>) =>
     String(item.poolName || ""),
     String(item.poolId || ""),
     toYesNo(item.isNew),
-    "否",
+    "いいえ",
     String(item.seqId || ""),
   ]);
 
@@ -142,10 +142,10 @@ export const useExcelExport = () => {
 
   const exportCurrentUserExcel = async () => {
     if (!canExport.value) {
-      throw new Error("请先选择一个账号");
+      throw new Error("先にアカウントを選択してください");
     }
     if (isExporting.value) {
-      throw new Error("正在导出中，请稍候");
+      throw new Error("出力中です。しばらくお待ちください");
     }
 
     isExporting.value = true;
@@ -162,7 +162,7 @@ export const useExcelExport = () => {
       const weaponRows = toWeaponRows(weaponRaw || {});
 
       if (charRows.length <= 0 && weaponRows.length <= 0) {
-        throw new Error("当前账号暂无可导出的记录");
+        throw new Error("現在のアカウントには出力可能な記録がありません");
       }
 
       const workbook = XLSX.utils.book_new();
@@ -182,8 +182,8 @@ export const useExcelExport = () => {
       (charSheet as any)["!cols"] = cols;
       (weaponSheet as any)["!cols"] = cols;
 
-      XLSX.utils.book_append_sheet(workbook, charSheet, "角色记录");
-      XLSX.utils.book_append_sheet(workbook, weaponSheet, "武器记录");
+      XLSX.utils.book_append_sheet(workbook, charSheet, "キャラ記録");
+      XLSX.utils.book_append_sheet(workbook, weaponSheet, "武器記録");
 
       const label = sanitizeFilenamePart(currentUserLabel.value || uid);
       const fileName = `Endfield_Gacha_${label}_${formatFileStamp(new Date())}.xlsx`;

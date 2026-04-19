@@ -26,12 +26,12 @@ const option = computed(() => {
       orient: 'vertical',
       left: 'left',
       textStyle: {
-        color: '#71717a' // 适配暗色模式
+          color: '#71717a' // ダークモード対応
       }
     },
     series: [
       {
-        name: '稀有度分布',
+        name: 'レア度分布',
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,

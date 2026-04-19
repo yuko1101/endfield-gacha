@@ -27,17 +27,17 @@ defineOptions({ inheritAttrs: false })
 
 const items = computed(() => [
   { 
-    label: '跟随系统', 
+    label: 'システム設定', 
     value: 'system', 
     icon: 'i-heroicons-computer-desktop' 
   },
   { 
-    label: '亮色模式', 
+    label: 'ライト', 
     value: 'light', 
     icon: 'i-heroicons-sun' 
   },
   { 
-    label: '暗色模式', 
+    label: 'ダーク', 
     value: 'dark', 
     icon: 'i-heroicons-moon' 
   }

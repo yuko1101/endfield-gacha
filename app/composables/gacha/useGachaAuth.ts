@@ -67,12 +67,12 @@ export const useGachaAuth = (params: {
   const inferChannelLabel = (p: {
     channel?: string;
     subChannel?: string;
-  }): "官服" | "B服" | "未知渠道" => {
+  }): "中国版" | "Bilibili版" | "不明なチャネル" => {
     const channel = String(p.channel ?? "");
     const subChannel = String(p.subChannel ?? "");
-    if (channel === "1" && subChannel === "1") return "官服";
-    if (channel === "2" && subChannel === "2") return "B服";
-    return "未知渠道";
+    if (channel === "1" && subChannel === "1") return "中国版";
+    if (channel === "2" && subChannel === "2") return "Bilibili版";
+    return "不明なチャネル";
   };
 
   const queryUidRoleFromU8Token = async (
@@ -98,7 +98,7 @@ export const useGachaAuth = (params: {
     );
 
     if (!res.ok) {
-      throw new Error(`query_role_list 请求失败: ${res.status}`);
+      throw new Error(`query_role_list リクエスト失敗: ${res.status}`);
     }
 
     const json = await res.json();
@@ -115,8 +115,8 @@ export const useGachaAuth = (params: {
     const roleName = String(role?.nickname ?? role?.nickName ?? "").trim();
     const serverName = String(role?.serverName ?? "").trim();
 
-    if (!uid) throw new Error("query_role_list 解析失败: 未找到 uid");
-    if (!roleId) throw new Error("query_role_list 解析失败: 未找到 roleId");
+    if (!uid) throw new Error("query_role_list 解析失敗: uid が見つかりません");
+    if (!roleId) throw new Error("query_role_list 解析失敗: roleId が見つかりません");
 
     return { uid, roleId, roleName, serverName };
   };
@@ -140,13 +140,13 @@ export const useGachaAuth = (params: {
     }
     if (!uri) {
       throw new Error(
-        "未在日志中找到抽卡链接哦~请先在游戏内打开一次抽卡记录页面，再进行同步~",
+        "ログ内にガチャリンクが見つかりません。先にゲーム内でガチャ履歴ページを開いてから同期してください。",
       );
     }
 
     const gachaParams = parseGachaParams(uri);
     if (!gachaParams?.u8_token) {
-      throw new Error("抽卡链接参数解析失败：未找到 u8_token");
+      throw new Error("ガチャリンクの解析に失敗しました：u8_token が見つかりません");
     }
 
     const pickServerId = () => {
@@ -163,7 +163,7 @@ export const useGachaAuth = (params: {
 
     const serverId = provider === "gryphline" ? pickServerId() : "1";
     if (provider === "gryphline" && !serverId) {
-      throw new Error("抽卡链接参数解析失败：未找到 serverId（国际服需要）");
+      throw new Error("ガチャリンクの解析に失敗しました：serverId が見つかりません（国際版で必要）");
     }
 
     const { uid, roleId, roleName, serverName } = await queryUidRoleFromU8Token(
@@ -178,7 +178,7 @@ export const useGachaAuth = (params: {
             channel: gachaParams.channel,
             subChannel: gachaParams.subChannel,
           })
-        : "国际服";
+        : "国際版";
 
     return {
       u8Token: gachaParams.u8_token,

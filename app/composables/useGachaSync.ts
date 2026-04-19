@@ -33,7 +33,7 @@ export const useGachaSync = () => {
   const user_agent = ref(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.112 Safari/537.36",
   );
-  const activeSyncActionLabel = ref("同步");
+  const activeSyncActionLabel = ref("同期");
 
   const currentUid = useState<string>("current-uid", () => "none");
 
@@ -87,11 +87,11 @@ export const useGachaSync = () => {
     userAgent: user_agent,
     syncProgress,
     onPageRetryExhausted: ({ type, poolName, page, reason }) => {
-      const poolTypeLabel = type === "char" ? "角色池" : "武器池";
-      const reasonText = reason ? ` 原因：${reason}` : "";
+      const poolTypeLabel = type === "char" ? "キャラプール" : "武器プール";
+      const reasonText = reason ? ` 理由：${reason}` : "";
       showToast(
-        `${activeSyncActionLabel.value}中出现分页失败`,
-        `${poolTypeLabel}「${poolName}」第 ${page} 页重试 3 次后仍失败。${reasonText}`,
+        `${activeSyncActionLabel.value}中にページ取得失敗が発生`,
+        `${poolTypeLabel}「${poolName}」第 ${page} ページで3回再試行しても失敗しました。${reasonText}`,
       );
     },
     ensureCharPoolInfoForPoolIds,
@@ -112,10 +112,10 @@ export const useGachaSync = () => {
     options?: { full?: boolean },
   ) => {
     if (isSyncing.value) return;
-    const actionLabel = options?.full ? "全量备份" : "同步";
+    const actionLabel = options?.full ? "全件同期" : "同期";
     activeSyncActionLabel.value = actionLabel;
     if (!uid || uid === "none") {
-      showToast(`${actionLabel}失败`, "请先选择一个账号");
+      showToast(`${actionLabel}失敗`, "先にアカウントを選択してください");
       return;
     }
 
@@ -125,8 +125,8 @@ export const useGachaSync = () => {
     let selectedLogUser: User | null = null;
     if (isSystemUid(uid) && !isWindows.value) {
       showToast(
-        `${actionLabel}失败`,
-        "system 账号仅支持 Windows。请通过“添加账号”方式登录后同步。",
+        `${actionLabel}失敗`,
+        "system アカウントは Windows のみ対応です。「アカウント追加」でログインして同期してください。",
       );
       return;
     }
@@ -137,8 +137,8 @@ export const useGachaSync = () => {
       const existing = findConfigUserByKey(config, uid);
       if (existing?.source === "remote" && !existing.token) {
         showToast(
-          `${actionLabel}失败`,
-          "该账号来自 WebDAV 恢复，未保存登录状态。请重新登录后再同步最新数据。",
+          `${actionLabel}失敗`,
+          "このアカウントは WebDAV 復元由来でログイン状態が保存されていません。再ログイン後に最新データを同期してください。",
         );
         return;
       }
@@ -153,8 +153,8 @@ export const useGachaSync = () => {
 
     if (logSystemUid && !isWindows.value) {
       showToast(
-        `${actionLabel}失败`,
-        "system 账号仅支持 Windows。请通过“添加账号”方式登录后同步。",
+        `${actionLabel}失敗`,
+        "system アカウントは Windows のみ対応です。「アカウント追加」でログインして同期してください。",
       );
       return;
     }
@@ -163,10 +163,10 @@ export const useGachaSync = () => {
     isSyncing.value = true;
     syncProgress.value = { type, poolName: "", page: 0 };
     showToast(
-      `${actionLabel}开始`,
+      `${actionLabel}開始`,
       options?.full
-        ? `将全量获取${type === "char" ? "干员" : "武器"}数据（耗时较长），用于修复历史遗漏数据。`
-        : `正在获取${type === "char" ? "干员" : "武器"}数据...`,
+        ? `全件取得します：${type === "char" ? "キャラ" : "武器"}データ（時間がかかります）。過去の欠損修復に使用します。`
+        : `${type === "char" ? "キャラ" : "武器"}データを取得中...`,
     );
 
     try {
@@ -196,8 +196,8 @@ export const useGachaSync = () => {
             const expectedDisplay = `${expectedNickName || "unknown"}(${expectedRoleId || "unknown"})`;
             const detectedDisplay = `${detectedNickName || "unknown"}(${detectedRoleId || "unknown"})`;
             showToast(
-              `无法${actionLabel}`,
-              `当前账号 ${expectedDisplay} 与当前日志中的账号 ${detectedDisplay} 不一致，请在游戏中打开寻访记录后重试。`,
+              `${actionLabel}できません`,
+              `現在のアカウント ${expectedDisplay} と現在ログ内のアカウント ${detectedDisplay} が一致しません。ゲーム内でスカウト履歴を開いて再試行してください。`,
             );
             return;
           }
@@ -232,8 +232,8 @@ export const useGachaSync = () => {
 
         if (selectedLogUser) {
           showToast(
-            "日志账号校验通过",
-            `开始同步！`,
+            "ログアカウント検証OK",
+            `同期を開始します！`,
           );
         } else if (isMainSystemUid) {
           const extra =
@@ -241,13 +241,13 @@ export const useGachaSync = () => {
               ? systemAuth.channelLabel
               : systemAuth.serverName || "Global";
           showToast(
-            "已识别日志",
-            `已切换为 [${extra}] ${systemAuth.roleName || systemAuth.detectedRoleId}(${systemAuth.detectedRoleId})`,
+            "ログを識別しました",
+            `次へ切替： [${extra}] ${systemAuth.roleName || systemAuth.detectedRoleId}(${systemAuth.detectedRoleId})`,
           );
         } else if (isLegacySystemUid) {
           showToast(
-            "system 入口已调整",
-            `当前选择的是 ${systemUidLabel(systemSyncUid)}，本次将按 ${regionLabel} 方式同步`,
+            "system 入口が変更されました",
+            `現在の選択は ${systemUidLabel(systemSyncUid)}，今回は ${regionLabel} 方式で同期します`,
           );
         }
 
@@ -255,7 +255,7 @@ export const useGachaSync = () => {
       } else {
         auth = await getAuthToken(uid);
       }
-      if (!auth) throw new Error("Token 获取失败，请重新登录");
+      if (!auth) throw new Error("Token の取得に失敗しました。再ログインしてください");
 
       const useWatermark = !options?.full;
       let stopSeqId = useWatermark
@@ -286,56 +286,56 @@ export const useGachaSync = () => {
       await loadUserData(effectiveUid, type);
 
       const failedPoolsText = syncResult.failedPools.length
-        ? `失败池：${syncResult.failedPools.join("、")}`
+        ? `失敗池：${syncResult.failedPools.join("、")}`
         : "";
       const reasonText = syncResult.failureReason
-        ? `；原因：${syncResult.failureReason}`
+        ? `；理由：${syncResult.failureReason}`
         : "";
 
       if (syncResult.status === "success") {
         if (syncResult.count > 0) {
-          showToast(`${actionLabel}成功`, `新增 ${syncResult.count} 条寻访记录！`);
-          scheduleAutoSync(effectiveUid, "抽卡记录已保存");
+          showToast(`${actionLabel}成功`, `${syncResult.count} 件のスカウト記録を追加しました！`);
+          scheduleAutoSync(effectiveUid, "ガチャ記録を保存しました");
         } else {
           showToast(
             `${actionLabel}成功`,
             options?.full
-              ? "未发现新增记录。"
-              : "已经是最新的啦！如果是刚抽的话可能有延迟哦~",
+              ? "新規記録はありません。"
+              : "すでに最新です。直近の結果は反映に遅延がある場合があります。",
           );
         }
       } else if (syncResult.status === "partial_failed") {
         const baseMsg =
           syncResult.count > 0
-            ? `新增 ${syncResult.count} 条记录，但存在部分分页获取失败。`
-            : "未获取到新增记录哦，且存在部分分页获取失败。";
+            ? `${syncResult.count} 件を追加しましたが、一部ページ取得に失敗しました。`
+            : "新規記録はなく、一部ページ取得に失敗しました。";
         if (syncResult.count > 0) {
-          scheduleAutoSync(effectiveUid, "抽卡记录已保存");
+          scheduleAutoSync(effectiveUid, "ガチャ記録を保存しました");
         }
         showToast(
-          `${actionLabel}部分失败`,
+          `${actionLabel}部分失敗`,
           [baseMsg, failedPoolsText, reasonText].filter(Boolean).join(" "),
         );
       } else {
         const failMsg =
           syncResult.count > 0
-            ? `新增 ${syncResult.count} 条记录，但所有池都未完整成功。`
-            : "所有分页在重试 3 次后仍获取失败。";
+            ? `${syncResult.count} 件を追加しましたが、全プールで完全成功しませんでした。`
+            : "全ページで3回再試行しても取得に失敗しました。";
         if (syncResult.count > 0) {
-          scheduleAutoSync(effectiveUid, "抽卡记录已保存");
+          scheduleAutoSync(effectiveUid, "ガチャ記録を保存しました");
         }
         showToast(
-          `${actionLabel}全部失败`,
+          `${actionLabel}全件失敗`,
           [failMsg, failedPoolsText, reasonText].filter(Boolean).join(" "),
         );
       }
     } catch (err: any) {
-      showToast(`${actionLabel}失败`, err.message || "未知错误");
+      showToast(`${actionLabel}失敗`, err.message || "不明なエラー");
       console.error(err);
     } finally {
       isSyncing.value = false;
       syncProgress.value = { type: null, poolName: "", page: 0 };
-      activeSyncActionLabel.value = "同步";
+      activeSyncActionLabel.value = "同期";
     }
   };
 

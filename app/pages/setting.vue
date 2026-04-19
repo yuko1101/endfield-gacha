@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-package" class="text-gray-500" />
-            <span class="font-semibold">软件相关</span>
+            <span class="font-semibold">ソフトウェア</span>
           </div>
         </div>
       </template>
@@ -13,19 +13,19 @@
       <div class="space-y-4">
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0">
-            <p class="text-sm text-gray-500">当前版本</p>
+            <p class="text-sm text-gray-500">現在のバージョン</p>
             <p class="font-semibold truncate">{{ appVersion }}</p>
           </div>
           <div class="text-right">
             <div class="flex gap-2 flex-wrap">
               <UButton icon="i-lucide-refresh-cw" color="neutral" variant="outline"
                 :loading="updateState === 'checking'" @click="onCheckUpdate">
-                检查更新
+                更新を確認
               </UButton>
 
               <UButton v-if="latestReleaseUrl" icon="i-lucide-external-link" color="neutral" variant="outline"
                 @click="open(latestReleaseUrl)">
-                打开发行页
+                リリースページを開く
               </UButton>
             </div>
           </div>
@@ -51,12 +51,12 @@
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-sliders-horizontal" class="text-gray-500" />
-          <span class="font-semibold">相关配置</span>
+          <span class="font-semibold">設定</span>
         </div>
       </template>
 
       <div class="flex items-center justify-between gap-4">
-        <span class="text-sm">主题模式</span>
+        <span class="text-sm">テーマ</span>
         <ColorMode />
       </div>
     </UCard>
@@ -65,13 +65,13 @@
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-cloud" class="text-gray-500" />
-          <span class="font-semibold">WebDAV 同步</span>
+          <span class="font-semibold">WebDAV 同期</span>
         </div>
       </template>
 
       <div class="space-y-4">
         <p class="text-sm text-gray-600 dark:text-gray-300">
-          WebDAV 同步适用于跨设备同步，同步内容不包含账号凭证（Token）信息。
+          WebDAV 同期は複数デバイス間の同期に対応し、同期内容にアカウント認証情報（Token）は含まれません。
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -81,17 +81,17 @@
           </div>
 
           <div class="space-y-1">
-            <p class="text-xs text-gray-500">目录</p>
+            <p class="text-xs text-gray-500">ディレクトリ</p>
             <UInput v-model="webdavConfig.basePath" placeholder="/endfield-gacha" class="w-full" />
           </div>
 
           <div class="space-y-1">
-            <p class="text-xs text-gray-500">用户名</p>
+            <p class="text-xs text-gray-500">ユーザー名</p>
             <UInput v-model="webdavConfig.username" placeholder="user" class="w-full" />
           </div>
 
           <div class="space-y-1">
-            <p class="text-xs text-gray-500">密码</p>
+            <p class="text-xs text-gray-500">パスワード</p>
             <UInput v-model="webdavConfig.password" type="password" placeholder="password" class="w-full" />
           </div>
         </div>
@@ -99,9 +99,9 @@
         <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
           <div class="flex items-center justify-between gap-4 p-3">
             <div class="min-w-0">
-              <p class="text-sm font-medium">自动同步</p>
+              <p class="text-sm font-medium">自動同期</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                开启后，新增账号信息或同步新的抽卡记录后，会自动同步有变化的账号到 WebDAV。
+                ONにすると、アカウント追加や新しいガチャ記録同期後に、変更があったアカウントを自動で WebDAV に同期します。
               </p>
             </div>
 
@@ -115,9 +115,9 @@
             :class="{ 'opacity-60': !webdavConfig.autoSync }"
           >
             <div class="min-w-0">
-              <p class="text-sm font-medium">静默模式</p>
+              <p class="text-sm font-medium">サイレントモード</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                仅影响自动同步。开启后在后台完成，不弹出结果提示；关闭后会显示自动同步结果。
+                自動同期にのみ影響します。ON時はバックグラウンドで実行し結果通知を表示せず、OFF時は結果を表示します。
               </p>
             </div>
 
@@ -135,7 +135,7 @@
             :loading="isSavingWebDav"
             @click="onSaveWebDavConfig"
           >
-            保存配置
+            設定を保存
           </UButton>
 
           <UButton
@@ -145,7 +145,7 @@
             :loading="isTestingWebDav"
             @click="onTestWebDav"
           >
-            连接测试
+            接続テスト
           </UButton>
 
           <UButton
@@ -155,7 +155,7 @@
             :disabled="!hasSyncableAccounts || isSyncingAllWebDav"
             @click="onSyncAllWebDav"
           >
-            立即同步全部账号
+            全アカウントを今すぐ同期
           </UButton>
 
           <UButton
@@ -165,7 +165,7 @@
             :loading="isOpeningRestore"
             @click="onOpenRestoreModal"
           >
-            从 WebDAV 恢复
+            WebDAV から復元
           </UButton>
         </div>
       </div>
@@ -175,30 +175,30 @@
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-file-spreadsheet" class="text-gray-500" />
-          <span class="font-semibold">数据导出</span>
+          <span class="font-semibold">データ出力</span>
         </div>
       </template>
 
       <div class="space-y-4">
         <p class="text-sm text-gray-600 dark:text-gray-300">
           <template v-if="canExport">
-            将导出当前账号
+            現在のアカウント
             <span class="font-semibold text-gray-900 dark:text-white">{{ exportUserLabel }}</span>
-            的角色记录与武器记录到系统下载目录，时间统一使用 24 小时制。
+            のキャラ記録と武器記録をシステムのダウンロード先へ出力します。時刻は24時間表記です。
           </template>
           <template v-else>
-            请先返回首页选择一个账号，再执行导出。
+            先にホームでアカウントを選択してから出力してください。
           </template>
         </p>
 
         <div class="flex items-center justify-between gap-4 flex-wrap">
           <span class="text-xs text-gray-500 dark:text-gray-400">
-            导出字段：时间、名称、星级、卡池名、卡池 ID、是否 NEW、是否为加急招募、seqId
+            出力項目：時刻、名称、レア度、プール名、プールID、NEW、無料募集、seqId
           </span>
 
           <UButton icon="i-lucide-download" color="primary" :loading="isExporting" :disabled="!canExport || isExporting"
             @click="onExportExcel">
-            导出 Excel
+            Excelを出力
           </UButton>
         </div>
       </div>
@@ -208,44 +208,44 @@
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-info" class="text-gray-500" />
-          <span class="font-semibold">更多信息</span>
+          <span class="font-semibold">その他情報</span>
         </div>
       </template>
 
       <div class="space-y-4">
-        <UAlert color="neutral" variant="subtle" icon="i-lucide-star" title="喜欢的话，给个 Star？"
-          description="本工具为开源软件，源代码使用 MIT 协议授权。" />
+        <UAlert color="neutral" variant="subtle" icon="i-lucide-star" title="気に入ったら Star をお願いします"
+          description="このツールはオープンソースで、ソースコードはMITライセンスです。" />
 
         <div class="space-y-2 text-sm text-gray-600 dark:text-gray-300">
           <p>
-            项目地址：
+            プロジェクトURL：
             <ULink class="text-primary" @click="open('https://github.com/bhaoo/endfield-gacha')">
               https://github.com/bhaoo/endfield-gacha
             </ULink>
           </p>
           <p>
-            本项目不会采集任何个人隐私。默认情况下，数据仅保存在本地 <code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">userData/</code>；只有在你主动配置 WebDAV 后，数据才会同步到你指定的 WebDav 服务端。
+            本プロジェクトは個人情報を収集しません。既定ではデータはローカル <code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">userData/</code> のみに保存され、WebDAV を設定した場合のみ指定サーバーへ同期されます。
           </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
           <UButton icon="i-lucide-scale" color="neutral" variant="outline"
             @click="open('https://github.com/bhaoo/endfield-gacha/blob/master/LICENSE')">
-            查看开源协议
+            ライセンスを見る
           </UButton>
           <UButton icon="i-lucide-bug" color="neutral" variant="outline"
             @click="open('https://github.com/bhaoo/endfield-gacha/issues')">
-            反馈问题 / 建议
+            問題報告 / 提案
           </UButton>
         </div>
       </div>
     </UCard>
 
-    <UModal v-model:open="isRestoreModalOpen" title="从 WebDAV 恢复">
+    <UModal v-model:open="isRestoreModalOpen" title="WebDAV から復元">
       <template #body>
         <div class="space-y-3">
           <p class="text-sm text-gray-600 dark:text-gray-300">
-            选择一个或多个远端账号恢复到本地。
+            リモートアカウントを1つ以上選択してローカルへ復元します。
           </p>
 
           <div
@@ -272,7 +272,7 @@
                 </template>
 
                 <template #description>
-                  {{ account.provider === "gryphline" ? "国际服" : "官服" }} · UID {{ account.uid }} · {{
+                  {{ account.provider === "gryphline" ? "国際版" : "中国版" }} · UID {{ account.uid }} · {{
                     formatDateTime(account.updatedAt)
                   }}
                 </template>
@@ -285,8 +285,8 @@
             color="neutral"
             variant="subtle"
             icon="i-lucide-folder-search"
-            title="未发现可恢复账号"
-            description="请确认远端目录中已有同步数据，或先执行一次“立即同步全部账号”。"
+            title="復元可能なアカウントが見つかりません"
+            description="リモートディレクトリに同期データがあるか確認するか、先に「全アカウントを今すぐ同期」を実行してください。"
           />
         </div>
       </template>
@@ -299,7 +299,7 @@
             :disabled="isRestoringWebDav"
             @click="isRestoreModalOpen = false"
           >
-            取消
+            キャンセル
           </UButton>
 
           <UButton
@@ -308,7 +308,7 @@
             :disabled="selectedRestoreKeys.length === 0 || isRestoringWebDav"
             @click="onRestoreSelectedAccounts"
           >
-            恢复选中账号
+            選択したアカウントを復元
           </UButton>
         </div>
       </template>
@@ -369,9 +369,9 @@ const open = async (url: string) => {
 const onCheckUpdate = async () => {
   await checkForUpdate({ force: true });
   if (updateState.value === "available") {
-    toast.add({ title: "发现新版本", description: `最新版本 ${latestVersion.value}` });
+    toast.add({ title: "新バージョンがあります", description: `最新バージョン ${latestVersion.value}` });
   } else if (updateState.value === "uptodate") {
-    toast.add({ title: "已经是最新版本", description: `当前版本 ${appVersion.value}` });
+    toast.add({ title: "最新バージョンです", description: `現在のバージョン ${appVersion.value}` });
   }
 };
 
@@ -379,14 +379,14 @@ const onExportExcel = async () => {
   try {
     const result = await exportCurrentUserExcel();
     toast.add({
-      title: "导出成功",
-      description: `${result.fileName} 已保存到下载目录。角色 ${result.charCount} 条，武器 ${result.weaponCount} 条。`,
+      title: "出力成功",
+      description: `${result.fileName} をダウンロード先に保存しました。キャラ ${result.charCount} 件、武器 ${result.weaponCount} 件。`,
       color: "success",
     });
   } catch (error: any) {
     toast.add({
-      title: "导出失败",
-      description: error?.message || "导出 Excel 失败",
+      title: "出力失敗",
+      description: error?.message || "Excel出力に失敗しました",
       color: "error",
     });
   }
@@ -429,10 +429,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 const formatDateTime = (value: string) => {
   const raw = String(value || "").trim();
-  if (!raw) return "暂无记录";
+  if (!raw) return "記録なし";
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return raw;
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return date.toLocaleString("ja-JP", { hour12: false });
 };
 
 const onSaveWebDavConfig = async () => {
@@ -441,14 +441,14 @@ const onSaveWebDavConfig = async () => {
     normalizeConfig();
     await persistConfig();
     toast.add({
-      title: "WebDAV 配置已保存",
-      description: "后续连接测试、同步和恢复都会使用当前配置~",
+      title: "WebDAV 設定を保存しました",
+      description: "以降の接続テスト・同期・復元はこの設定を使用します。",
       color: "success",
     });
   } catch (error: any) {
     toast.add({
-      title: "保存失败",
-      description: getErrorMessage(error, "保存 WebDAV 配置失败"),
+      title: "保存失敗",
+      description: getErrorMessage(error, "WebDAV 設定の保存に失敗しました"),
       color: "error",
     });
   } finally {
@@ -462,8 +462,8 @@ const onTestWebDav = async () => {
     await testConnection();
   } catch (error: any) {
     toast.add({
-      title: "连接测试失败",
-      description: getErrorMessage(error, "WebDAV 连接测试失败"),
+      title: "接続テスト失敗",
+      description: getErrorMessage(error, "WebDAV 接続テストに失敗しました"),
       color: "error",
     });
   } finally {
@@ -474,8 +474,8 @@ const onTestWebDav = async () => {
 const onSyncAllWebDav = async () => {
   if (!hasSyncableAccounts.value) {
     toast.add({
-      title: "无法同步",
-      description: "当前没有可同步的账号",
+      title: "同期できません",
+      description: "現在同期可能なアカウントがありません",
       color: "warning",
     });
     return;
@@ -517,8 +517,8 @@ const onOpenRestoreModal = async () => {
     isRestoreModalOpen.value = true;
   } catch (error: any) {
     toast.add({
-      title: "读取远端账号失败",
-      description: getErrorMessage(error, "无法读取 WebDAV 远端账号列表"),
+      title: "リモートアカウントの読み込みに失敗しました",
+      description: getErrorMessage(error, "WebDAV のリモートアカウント一覧を読み込めませんでした"),
       color: "error",
     });
   } finally {
@@ -534,8 +534,8 @@ const onRestoreSelectedAccounts = async () => {
     selectedRestoreKeys.value = [];
   } catch (error: any) {
     toast.add({
-      title: "恢复失败",
-      description: getErrorMessage(error, "从 WebDAV 恢复账号失败"),
+      title: "復元失敗",
+      description: getErrorMessage(error, "WebDAV からのアカウント復元に失敗しました"),
       color: "error",
     });
   } finally {
@@ -556,17 +556,17 @@ const updateAlertIcon = computed(() => {
   return "i-lucide-info";
 });
 const updateAlertTitle = computed(() => {
-  if (updateState.value === "available") return "发现新版本";
-  if (updateState.value === "uptodate") return "已经是最新版本";
-  if (updateState.value === "error") return "检查更新失败";
+  if (updateState.value === "available") return "新バージョンがあります";
+  if (updateState.value === "uptodate") return "最新バージョンです";
+  if (updateState.value === "error") return "更新確認に失敗しました";
   return "";
 });
 const updateAlertDesc = computed(() => {
   if (updateState.value === "available") {
-    return `当前版本 ${appVersion.value}，最新版本 ${latestVersion.value}。请点击“打开发行页”前往发行页下载并安装。`;
+    return `現在のバージョン ${appVersion.value}、最新バージョン ${latestVersion.value}。 「リリースページを開く」を押してダウンロード・インストールしてください。`;
   }
   if (updateState.value === "uptodate") {
-    return `当前版本 ${appVersion.value} 已是最新。`;
+    return `現在のバージョン ${appVersion.value} は最新です。`;
   }
   if (updateState.value === "error") {
     return updateError.value;

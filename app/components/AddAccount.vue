@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model="isOpen" title="添加账号">
+  <UModal v-model="isOpen" title="アカウント追加">
     <UButton icon="i-lucide-user-round-plus" size="md" color="neutral" variant="outline" />
     <template #body>
       <div class="flex flex-col gap-4 p-2">
@@ -9,23 +9,23 @@
         <div class="flex flex-col items-center justify-center border-b border-gray-100 dark:border-gray-800 pb-5">
           <UButton @click="handleWebLogin" :loading="isLoggingIn" :disabled="isProcessing" size="xl" color="neutral"
             variant="outline" class="w-full justify-center" icon="i-heroicons-globe-alt">
-            {{ isLoggingIn ? '正在监听登录...' : '打开官网登录并自动获取' }}
+            {{ isLoggingIn ? 'ログイン待機中...' : '公式サイトでログインして自動取得' }}
           </UButton>
           <p class="text-xs text-gray-400 mt-2">
-            推荐使用。将在应用内打开鹰角官网，登录后自动抓取 Token。
+            推奨です。アプリ内で公式サイトを開き、ログイン後にTokenを自動取得します。
           </p>
         </div>
 
         <div class="space-y-3">
-          <p class="text-sm font-bold text-gray-700 dark:text-gray-200">手动输入 Token</p>
+          <p class="text-sm font-bold text-gray-700 dark:text-gray-200">Tokenを手動入力</p>
           <div class="flex gap-2">
-            <UInput v-model="token" placeholder="请粘贴 Token" class="flex-1" :disabled="isProcessing" />
+            <UInput v-model="token" placeholder="Tokenを貼り付け" class="flex-1" :disabled="isProcessing" />
             <UButton @click="handleManualAdd" :loading="isProcessing" :disabled="!token || isProcessing">
-              确定
+              確定
             </UButton>
           </div>
           <p class="text-xs text-gray-400">
-            * 选择手动输入 Token 时，请先在鹰角网络<ULink @click="open(serverInfo.loginUrl)" class="text-primary">官网</ULink>登录账号后，通过<ULink @click="open(serverInfo.tokenUrl)" class="text-primary">接口</ULink>获取token。
+            * 手動入力する場合は、先に<ULink @click="open(serverInfo.loginUrl)" class="text-primary">公式サイト</ULink>へログインし、<ULink @click="open(serverInfo.tokenUrl)" class="text-primary">API</ULink>から token を取得してください。
           </p>
         </div>
 
@@ -49,12 +49,12 @@ const currentUid = useState<string>('current-uid');
 
 const serverItems: TabsItem[] = [
   {
-    label: '官服',
+    label: '中国版',
     icon: 'i-lucide-house',
     slot: 'hypergryph'
   },
   {
-    label: '国际服',
+    label: '国際版',
     icon: 'i-lucide-globe',
     slot: 'gryphline'
   }
@@ -101,15 +101,15 @@ const handleWebLogin = async () => {
     const gotToken = await openLoginWindow(loginProvider.value);
 
     if (gotToken) {
-      console.log("获取到 Token，开始换取 UID...");
+      console.log("Token を取得しました。UID を取得します...");
       token.value = gotToken;
       await processSave(gotToken);
     } else {
-      console.log("用户取消了登录");
+      console.log("ユーザーがログインをキャンセルしました");
     }
   } catch (error) {
-    console.warn("发生错误", error);
-    toast.add({ title: "错误", description: "无法打开登录窗口" });
+    console.warn("エラーが発生しました", error);
+    toast.add({ title: "エラー", description: "ログインウィンドウを開けませんでした" });
   } finally {
     isLoggingIn.value = false;
   }
@@ -126,14 +126,14 @@ const processSave = async (loginToken: string) => {
     const oauthToken = await getOAuthToken(loginToken);
 
     if (!oauthToken) {
-      toast.add({ title: "授权失败", description: "无法换取 OAuth Token，请重试" });
+      toast.add({ title: "認証失敗", description: "OAuth Token の取得に失敗しました。再試行してください" });
       return;
     }
 
     const bindings = await fetchUidByToken(oauthToken);
 
     if (!bindings || bindings.length === 0) {
-      toast.add({ title: "识别失败", description: "无法获取 UID/角色信息，Token 可能已失效" });
+      toast.add({ title: "識別失敗", description: "UID/キャラクター情報を取得できません。Token が無効の可能性があります" });
       return;
     }
 
@@ -163,24 +163,24 @@ const processSave = async (loginToken: string) => {
     }
 
     if (okCount > 0) {
-      toast.add({ title: "添加成功", description: `已添加 ${okCount} 个角色` });
+      toast.add({ title: "追加成功", description: `${okCount} 件のキャラクターを追加しました` });
       const first = usersToAdd[0];
       currentUid.value = (first?.key || first?.uid) as string;
       for (const user of usersToAdd) {
         const key = String(user.key || user.uid || "").trim();
         if (!key) continue;
-        scheduleAutoSync(key, "账号元数据已更新");
+        scheduleAutoSync(key, "アカウント情報を更新しました");
       }
       isOpen.value = false;
       token.value = '';
       emit('success');
     } else {
-      toast.add({ title: "保存失败", description: "写入配置文件出错" });
+      toast.add({ title: "保存失敗", description: "設定ファイルの書き込みに失敗しました" });
     }
 
   } catch (e) {
     console.error(e);
-    toast.add({ title: "错误", description: "网络请求异常" });
+    toast.add({ title: "エラー", description: "ネットワークエラー" });
   } finally {
     isProcessing.value = false;
   }
@@ -215,7 +215,7 @@ const getOAuthToken = async (loginToken: string): Promise<string | null> => {
       console.log("换取 OAuth Token 成功");
       return res.data.token;
     } else {
-      console.error("Grant API 返回错误:", res);
+      console.error("Grant API がエラーを返しました:", res);
       return null;
     }
   } catch (e) {
@@ -254,7 +254,7 @@ const fetchUidByToken = async (oauthToken: string): Promise<{ uid: string; roles
     const data = await response.json() as UserBindingsResponse;
 
     if (data.status !== 0) {
-      console.error("获取 UID 失败:", data);
+      console.error("UID の取得に失敗しました:", data);
       return null;
     }
 
