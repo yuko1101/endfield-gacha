@@ -65,14 +65,14 @@ export const useUpdate = () => {
           Accept: "application/vnd.github+json",
         },
       });
-      if (!res.ok) throw new Error(`请求失败: ${res.status}`);
+      if (!res.ok) throw new Error(`リクエスト失敗: ${res.status}`);
       const json = (await res.json()) as GitHubRelease;
 
       latestVersion.value = normalizeVersion(json.tag_name || "");
       latestReleaseUrl.value =
         json.html_url || "https://github.com/bhaoo/endfield-gacha/releases/latest";
 
-      if (!latestVersion.value) throw new Error("未解析到最新版本号");
+      if (!latestVersion.value) throw new Error("最新バージョンを取得できませんでした");
 
       let currentVersion = "";
       try {
@@ -81,7 +81,7 @@ export const useUpdate = () => {
         // ignore
       }
 
-      // 运行时无法获取版本号时仍显示有新版本
+      // 実行時にバージョン取得できない場合でも更新ありとして扱う
       if (currentVersion && compareSemver(latestVersion.value, currentVersion) <= 0) {
         updateState.value = "uptodate";
       } else {
@@ -91,7 +91,7 @@ export const useUpdate = () => {
       lastCheckedAt.value = now;
     } catch (e: any) {
       updateState.value = "error";
-      updateError.value = e?.message || "检查更新失败";
+      updateError.value = e?.message || "更新確認に失敗しました";
       lastCheckedAt.value = now;
     }
   };

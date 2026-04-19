@@ -3,7 +3,7 @@
 
   <div class="space-y-2 text-sm">
     <div class="flex justify-between border-b pb-1">
-      <span>总抽数:</span> <span>{{ stat.totalPulls }}</span>
+      <span>総回数:</span> <span>{{ stat.totalPulls }}</span>
     </div>
 
     <div
@@ -14,23 +14,23 @@
       <span :class="['font-bold', row.color]">{{ row.label }}</span>
 
       <span class="text-gray-600 dark:text-gray-300">
-        共 {{ row.count }} 个
+        合計 {{ row.count }} 件
       </span>
 
       <span class="text-gray-500">
-        占 {{ getPercent(row.count, stat.totalPulls) }}%
+        割合 {{ getPercent(row.count, stat.totalPulls) }}%
       </span>
 
       <span class="text-gray-500">
-        平均 {{ getAvg(row.count, stat.totalPulls) }} 抽/个
+        平均 {{ getAvg(row.count, stat.totalPulls) }} 連/件
       </span>
     </div>
 
     <div class="mt-3">
       <p class="font-semibold mb-2 text-gray-500 text-xs">
-        6★ 历史记录:
+        ★6 履歴:
         <span class="font-normal text-gray-400">
-          出卡数 {{ history6Count }} 次 · 歪 {{ offCount }} 次
+          ★6出現 {{ history6Count }} 回 · すり抜け {{ offCount }} 回
         </span>
       </p>
 
@@ -70,14 +70,14 @@
               dominant-baseline="central"
               fill="white"
             >
-              歪
+              すり抜け
             </text>
           </svg>
         </div>
       </div>
 
       <div v-else class="text-xs text-gray-400 italic">
-        暂无6星记录
+        ★6記録なし
       </div>
     </div>
   </div>
@@ -128,4 +128,3 @@ const getAvg = (count: number, total: number) => {
   return (total / count).toFixed(2)
 }
 </script>
-

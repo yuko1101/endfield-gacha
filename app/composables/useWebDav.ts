@@ -54,19 +54,19 @@ export const useWebDav = () => {
   const persistConfig = async () => {
     normalizeConfig();
     if (!(await saveConfig())) {
-      throw new Error("保存 WebDAV 配置失败");
+      throw new Error("WebDAV 設定の保存に失敗しました");
     }
   };
 
   const showSyncToast = (result: WebDavSyncResult) => {
     const titleMap: Record<WebDavSyncResult["status"], string> = {
-      noop: "WebDAV 已是最新",
-      uploaded: "上传至 WebDAV 成功",
-      downloaded: "已从 WebDAV 拉取远端数据",
-      merged: "WebDAV 自动合并成功",
+      noop: "WebDAV は最新です",
+      uploaded: "WebDAV へアップロード成功",
+      downloaded: "WebDAV からリモートデータを取得しました",
+      merged: "WebDAV 自動マージ成功",
     };
     toast.add({
-      title: titleMap[result.status] || "WebDAV 同步完成",
+      title: titleMap[result.status] || "WebDAV 同期完了",
       description: result.warning
         ? `${result.message}（${result.warning}）`
         : result.message,
@@ -80,11 +80,11 @@ export const useWebDav = () => {
   ) => {
     const targetKey = String(accountKey || currentUser.value || "").trim();
     if (!targetKey || targetKey === "none") {
-      throw new Error("请先选择一个账号");
+      throw new Error("先にアカウントを選択してください");
     }
 
     if (!isConfigured.value) {
-      throw new Error("请先填写完整的 WebDAV 配置");
+      throw new Error("先に WebDAV 設定をすべて入力してください");
     }
 
     if (activeSyncTasks.has(targetKey)) {
@@ -116,8 +116,8 @@ export const useWebDav = () => {
       .catch((error: any) => {
         if (options?.showErrorToast !== false) {
           toast.add({
-            title: "WebDAV 同步失败",
-            description: error?.message || String(error || "未知错误"),
+            title: "WebDAV 同期失敗",
+            description: error?.message || String(error || "不明なエラー"),
             color: "error",
           });
         }
@@ -166,13 +166,13 @@ export const useWebDav = () => {
 
   const syncAllAccounts = async () => {
     if (!isConfigured.value) {
-      throw new Error("请先填写完整的 WebDAV 配置");
+      throw new Error("先に WebDAV 設定をすべて入力してください");
     }
 
     await persistConfig();
     const accountKeys = getSyncableAccountKeys();
     if (accountKeys.length <= 0) {
-      throw new Error("当前没有可同步的账号");
+      throw new Error("現在同期可能なアカウントがありません");
     }
 
     isBatchSyncing.value = true;
@@ -191,7 +191,7 @@ export const useWebDav = () => {
         } catch (error: any) {
           failed.push({
             accountKey,
-            message: error?.message || String(error || "未知错误"),
+            message: error?.message || String(error || "不明なエラー"),
           });
         }
       }
@@ -214,18 +214,18 @@ export const useWebDav = () => {
     };
 
     const summaryParts = [
-      `共扫描 ${summary.total} 个账号`,
-      `上传 ${statusCounts.uploaded} 个`,
-      `拉取 ${statusCounts.downloaded} 个`,
-      `合并 ${statusCounts.merged} 个`,
-      `无变化 ${statusCounts.noop} 个`,
+      `合計 ${summary.total} アカウントを処理`,
+      `アップロード ${statusCounts.uploaded}`,
+      `取得 ${statusCounts.downloaded}`,
+      `マージ ${statusCounts.merged}`,
+      `変更なし ${statusCounts.noop}`,
     ];
     if (failed.length > 0) {
-      summaryParts.push(`失败 ${failed.length} 个`);
+      summaryParts.push(`失敗 ${failed.length} 件`);
     }
 
     toast.add({
-      title: failed.length > 0 ? "WebDAV 全量同步完成（含失败）" : "WebDAV 全量同步完成",
+      title: failed.length > 0 ? "WebDAV 全件同期完了（失敗あり）" : "WebDAV 全件同期完了",
       description: summaryParts.join("，"),
       color: failed.length > 0 ? "warning" : "success",
     });
@@ -233,7 +233,7 @@ export const useWebDav = () => {
     const firstFailure = failed[0];
     if (firstFailure) {
       toast.add({
-        title: "存在同步失败账号",
+        title: "同期失敗のアカウントがあります",
         description: `${formatAccountFailureLabel(firstFailure.accountKey)} ${firstFailure.message}`,
         color: "warning",
       });
@@ -244,20 +244,20 @@ export const useWebDav = () => {
 
   const testConnection = async () => {
     if (!isConfigured.value) {
-      throw new Error("请先填写完整的 WebDAV 配置");
+      throw new Error("先に WebDAV 設定をすべて入力してください");
     }
     await persistConfig();
     await invoke("webdav_test_connection");
     toast.add({
-      title: "连接测试成功",
-      description: "WebDAV 基础目录和 manifest 已可读写。",
+      title: "接続テスト成功",
+      description: "WebDAV 基本ディレクトリと manifest は読み書き可能です。",
       color: "success",
     });
   };
 
   const listRestoreAccounts = async () => {
     if (!isConfigured.value) {
-      throw new Error("请先填写完整的 WebDAV 配置");
+      throw new Error("先に WebDAV 設定をすべて入力してください");
     }
     await persistConfig();
     return await invoke<WebDavRestoreAccount[]>("webdav_list_restore_accounts");
@@ -265,7 +265,7 @@ export const useWebDav = () => {
 
   const restoreAccounts = async (keys: string[]) => {
     if (!Array.isArray(keys) || keys.length <= 0) {
-      throw new Error("请至少选择一个远端账号");
+      throw new Error("少なくとも1つのリモートアカウントを選択してください");
     }
     await persistConfig();
     const result = await invoke<WebDavRestoreResult>("webdav_restore_accounts", {
@@ -274,14 +274,14 @@ export const useWebDav = () => {
     await loadConfig();
     emitLocalChanged(result.restored);
     toast.add({
-      title: "恢复成功",
-      description: `已恢复 ${result.restored.length} 个账号。`,
+      title: "復元成功",
+      description: `${result.restored.length} アカウントを復元しました。`,
       color: "success",
     });
     return result;
   };
 
-  const scheduleAutoSync = (accountKey: string, reason = "本地记录已更新") => {
+  const scheduleAutoSync = (accountKey: string, reason = "ローカル記録を更新しました") => {
     const targetKey = String(accountKey || "").trim();
     if (!targetKey || targetKey === "none") return;
     if (!webdavConfig.value.autoSync || !isConfigured.value) return;
@@ -297,7 +297,7 @@ export const useWebDav = () => {
       setTimeout(() => {
         autoSyncTimers.delete(targetKey);
         syncAccount(targetKey, { silentSuccess: silentAutoSync, queueIfBusy: true }).catch((error) => {
-          console.error(`[WebDAV 自动同步失败] ${reason}`, error);
+          console.error(`[WebDAV 自動同期失敗] ${reason}`, error);
         });
       }, 2500),
     );

@@ -4,11 +4,11 @@
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-2">
           <UButton @click="onSyncClick" color="primary" :loading="syncMode === 'latest' && isSyncing" :disabled="isSyncing">
-            {{ isSyncing && syncMode === 'latest' ? '同步中...' : '同步最新数据' }}
+            {{ isSyncing && syncMode === 'latest' ? '同期中...' : '最新データを同期' }}
           </UButton>
           <UButton @click="onFullBackupClick" color="neutral" variant="outline" :loading="syncMode === 'full' && isSyncing"
             :disabled="isSyncing">
-            {{ isSyncing && syncMode === 'full' ? '同步中...' : '全量同步' }}
+            {{ isSyncing && syncMode === 'full' ? '同期中...' : '全件同期' }}
           </UButton>
           <AddAccount @success="handleAccountAdded"></AddAccount>
           <SelectAccount v-model="uid"></SelectAccount>
@@ -19,7 +19,7 @@
           </NuxtLink>
           <USeparator v-if="isSyncing && syncProgress.poolName" orientation="vertical" class="h-6 mx-2" />
           <UBadge v-if="isSyncing && syncProgress.poolName" color="neutral" variant="outline">
-            正在获取：{{ syncProgress.poolName }} · 第 {{ syncProgress.page }} 页
+            取得中：{{ syncProgress.poolName }} · 第 {{ syncProgress.page }} ページ
           </UBadge>
         </div>
         <div class="flex items-center gap-2">
@@ -38,7 +38,7 @@
             <span class="tabular-nums">{{ arsenalTicketCostDisplay }}</span>
           </div>
           <NuxtLink v-if="route.path === '/setting'" :to="settingBackTo">
-            <UButton icon="i-lucide-arrow-left" label="返回" color="neutral" variant="outline" />
+            <UButton icon="i-lucide-arrow-left" label="戻る" color="neutral" variant="outline" />
           </NuxtLink>
           <NuxtLink v-else :to="{ path: '/setting', query: { from: route.fullPath } }">
             <UChip :show="updateHint" color="primary" size="sm">
@@ -50,12 +50,12 @@
 
       <UModal
         v-model:open="isFullSyncConfirmOpen"
-        title="全量同步"
+        title="全件同期"
       >
         <template #body>
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            全量同步会重新拉取当前卡池的全部记录，耗时更长，是否继续？
-            <br/>建议仅在<b>数据异常或需要完整重建</b>时使用该功能。
+            全件同期では現在のガチャプールの全記録を再取得するため、時間がかかります。続行しますか？
+            <br/><b>データ異常または完全再構築が必要な場合</b>のみ使用してください。
           </p>
         </template>
 
@@ -67,7 +67,7 @@
               :disabled="isSyncing"
               @click="isFullSyncConfirmOpen = false"
             >
-              取消
+              キャンセル
             </UButton>
             <UButton
               color="error"
@@ -75,7 +75,7 @@
               :disabled="isSyncing"
               @click="onConfirmFullBackup"
             >
-              确认全量同步
+              全件同期を実行
             </UButton>
           </div>
         </template>
@@ -120,7 +120,7 @@ const summarizeCharPaidPulls = (records: Record<string, any[]> | undefined | nul
   for (const list of Object.values(records || {})) {
     if (!Array.isArray(list) || list.length <= 0) continue
     for (const it of list) {
-      // 角色池：不计算免费抽（isFree === true）
+      // キャラプール：不计算免费抽（isFree === true）
       if (it && it.isFree === true) continue
       paid++
     }
@@ -173,14 +173,14 @@ const currentMainPage = computed(() => {
 })
 const togglePoolTo = computed(() => (currentMainPage.value === '/' ? '/weapon' : '/'))
 const togglePoolLabel = computed(() =>
-  currentMainPage.value === '/' ? '切换至武器池' : '切换至角色池',
+  currentMainPage.value === '/' ? '武器プールへ切替' : 'キャラプールへ切替',
 )
 const gachaType = computed(() => {
   return currentMainPage.value === '/' ? 'char' : 'weapon'
 })
 
 const loadAllData = async (uidToLoad: string) => {
-  console.log(`正在加载 UID ${uidToLoad} 的所有数据...`);
+  console.log(`UID ${uidToLoad} の全データを読み込み中...`);
   const seq = ++userDataLoadSeq
   isUserDataLoading.value = true
   try {
@@ -264,6 +264,6 @@ const open = async (url: string) => {
 };
 
 const handleAccountAdded = () => {
-  console.log('账号添加成功，全局列表已自动更新');
+  console.log('アカウント追加に成功し、一覧を自動更新しました');
 };
 </script>

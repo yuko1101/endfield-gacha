@@ -108,7 +108,7 @@ export const createGachaApi = (deps: {
           lang,
         });
       } catch (error: any) {
-        const msg = String(error?.message || "获取武器池信息失败");
+        const msg = String(error?.message || "武器プール情報の取得に失敗しました");
         console.error(`Fetch weapon pool info failed for ${weaponPoolId}:`, error);
         return {
           data: allData,
@@ -160,7 +160,7 @@ export const createGachaApi = (deps: {
           break;
         } catch (error: any) {
           const isLastAttempt = attempt >= MAX_PAGE_RETRY;
-          const msg = String(error?.message || "分页获取失败");
+          const msg = String(error?.message || "ページ取得に失敗しました");
           console.error(
             `Fetch page ${page} failed (${attempt}/${MAX_PAGE_RETRY}) for ${JSON.stringify(extraParams)}:`,
             error,
@@ -229,7 +229,7 @@ export const createGachaApi = (deps: {
           lang,
         });
       } catch (error: any) {
-        const msg = String(error?.message || "获取角色池信息失败");
+        const msg = String(error?.message || "キャラプール情報の取得に失敗しました");
         console.error(
           `Fetch special char pool info failed for ${JSON.stringify(extraParams)}:`,
           error,
@@ -320,7 +320,7 @@ export const createGachaApi = (deps: {
     const lang = "zh-cn";
     deps.syncProgress.value = {
       type: "weapon",
-      poolName: "获取武器池列表",
+      poolName: "武器プール一覧を取得中",
       page: 1,
     };
 
@@ -342,16 +342,16 @@ export const createGachaApi = (deps: {
       }
       const poolJson = await poolRes.json();
       if (poolJson.code !== 0 || !poolJson.data) {
-        throw new Error(`获取武器池列表失败: ${String(poolJson.msg || "")}`);
+        throw new Error(`武器プール一覧の取得に失敗しました: ${String(poolJson.msg || "")}`);
       }
       pools = poolJson.data as { poolId: string; poolName: string }[];
     } catch (error: any) {
-      const msg = String(error?.message || "获取武器池列表失败");
+      const msg = String(error?.message || "武器プール一覧の取得に失敗しました");
       console.error("Fetch weapon pools failed:", error);
       return {
         count: 0,
         status: "all_failed",
-        failedPools: ["武器池列表"],
+        failedPools: ["武器プール一覧"],
         totalPools: 1,
         failureReason: msg,
       };

@@ -12,7 +12,7 @@ export const usePoolSelector = (params: {
   getLabel?: (s: GachaStatistics) => string
 }) => {
   const allValue = params.allValue || '__all__'
-  const allLabel = params.allLabel || '全部'
+  const allLabel = params.allLabel || 'すべて'
   const getValue = params.getValue || ((s: GachaStatistics) => String(s.poolId || s.poolName || ''))
   const getLabel = params.getLabel || ((s: GachaStatistics) => String(s.poolName || getValue(s)))
 

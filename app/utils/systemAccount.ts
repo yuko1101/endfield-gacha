@@ -21,10 +21,9 @@ export const isSystemUid = (uid: string | null | undefined): uid is SystemUid =>
   uid === SYSTEM_UID_BILIBILI
 
 export const systemUidLabel = (uid: string): string => {
-  if (uid === SYSTEM_UID_CN) return 'system(国服)'
-  if (uid === SYSTEM_UID_GLOBAL) return 'system(国际服)'
-  if (uid === SYSTEM_UID_OFFICIAL) return 'system(官服-已弃用)'
-  if (uid === SYSTEM_UID_BILIBILI) return 'system(Bilibili-已弃用)'
-  return 'system(自动识别-已弃用)'
+  if (uid === SYSTEM_UID_CN) return 'system(中国版)'
+  if (uid === SYSTEM_UID_GLOBAL) return 'system(国際版)'
+  if (uid === SYSTEM_UID_OFFICIAL) return 'system(中国版-廃止)'
+  if (uid === SYSTEM_UID_BILIBILI) return 'system(Bilibili-廃止)'
+  return 'system(自動識別-廃止)'
 }
-
