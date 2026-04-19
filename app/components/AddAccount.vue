@@ -101,14 +101,14 @@ const handleWebLogin = async () => {
     const gotToken = await openLoginWindow(loginProvider.value);
 
     if (gotToken) {
-      console.log("获取到 Token，開始换取 UID...");
+      console.log("Token を取得しました。UID を取得します...");
       token.value = gotToken;
       await processSave(gotToken);
     } else {
-      console.log("用户キャンセル了登录");
+      console.log("ユーザーがログインをキャンセルしました");
     }
   } catch (error) {
-    console.warn("发生エラー", error);
+    console.warn("エラーが発生しました", error);
     toast.add({ title: "エラー", description: "ログインウィンドウを開けませんでした" });
   } finally {
     isLoggingIn.value = false;
@@ -215,7 +215,7 @@ const getOAuthToken = async (loginToken: string): Promise<string | null> => {
       console.log("换取 OAuth Token 成功");
       return res.data.token;
     } else {
-      console.error("Grant API 返回エラー:", res);
+      console.error("Grant API がエラーを返しました:", res);
       return null;
     }
   } catch (e) {
@@ -254,7 +254,7 @@ const fetchUidByToken = async (oauthToken: string): Promise<{ uid: string; roles
     const data = await response.json() as UserBindingsResponse;
 
     if (data.status !== 0) {
-      console.error("获取 UID 失敗:", data);
+      console.error("UID の取得に失敗しました:", data);
       return null;
     }
 

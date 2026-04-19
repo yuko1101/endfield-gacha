@@ -33,7 +33,7 @@ const compareSeqId = (a: string, b: string) => {
   return a.localeCompare(b);
 };
 
-// gachaTs は文字列のため、出力時はローカルの24時間表記に統一する。
+// gachaTs（ガチャ時刻）は文字列のため、出力時はローカルの24時間表記に統一する。
 const normalizeTimestampMs = (value?: string) => {
   const raw = String(value || "").trim();
   if (!raw || !isDigitsOnly(raw)) return null;

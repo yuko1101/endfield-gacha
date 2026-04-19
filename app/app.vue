@@ -120,7 +120,7 @@ const summarizeCharPaidPulls = (records: Record<string, any[]> | undefined | nul
   for (const list of Object.values(records || {})) {
     if (!Array.isArray(list) || list.length <= 0) continue
     for (const it of list) {
-      // キャラプール：不计算免费抽（isFree === true）
+      // キャラプール：無料募集（isFree === true）は計算に含めない
       if (it && it.isFree === true) continue
       paid++
     }
