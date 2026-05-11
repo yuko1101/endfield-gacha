@@ -619,6 +619,20 @@ fn read_pool_info() -> Result<serde_json::Value, String> {
                 "pool_name": "绯珀申领",
                 "pool_type": "special",
                 "up6_id": "wpn_sword_0022"
+            },
+            {
+                "pool_gacha_type": "char",
+                "pool_id": "special_1_2_1",
+                "pool_name": "春雷动，万物生",
+                "pool_type": "special",
+                "up6_id": "chr_0030_zhuangfy"
+            },
+            {
+                "pool_gacha_type": "weapon",
+                "pool_id": "weponbox_1_2_1",
+                "pool_name": "行舟申领",
+                "pool_type": "special",
+                "up6_id": "wpn_funnel_0015"
             }
         ]);
 
