@@ -206,6 +206,13 @@ fn default_pool_info() -> serde_json::Value {
                 "chr_0025_ardelia",
                 "chr_0029_pograni"
             ]
+        },
+        {
+            "pool_gacha_type": "char",
+            "pool_id": "special_1_3_1",
+            "pool_name": "拳出无悔",
+            "pool_type": "special",
+            "up6_id": "chr_0031_mifu"
         }
     ])
 }
