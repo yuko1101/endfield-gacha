@@ -213,6 +213,13 @@ fn default_pool_info() -> serde_json::Value {
             "pool_name": "拳出无悔",
             "pool_type": "special",
             "up6_id": "chr_0031_mifu"
+        },
+        {
+            "pool_gacha_type": "weapon",
+            "pool_id": "weponbox_1_3_1",
+            "pool_name": "绛结申领",
+            "pool_type": "special",
+            "up6_id": "wpn_claym_0017"
         }
     ])
 }
