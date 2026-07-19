@@ -23,20 +23,22 @@
           </UBadge>
         </div>
         <div class="flex items-center gap-2">
-          <div
-            v-if="hasCharGachaData"
-            class="rounded-md font-medium inline-flex items-center text-sm ring ring-red-300 ring-inset text-default bg-default p-1.5"
-          >
-            <img class="block w-5 h-5 relative top-0.4 mr-1" src="assets/images/oroberyl.png" />
-            <span class="tabular-nums">{{ oroberylCostDisplay }}</span>
-          </div>
-          <div
-            v-if="hasWeaponGachaData"
-            class="rounded-md font-medium inline-flex items-center text-sm ring ring-blue-300 ring-inset text-default bg-default p-1.5"
-          >
-            <img class="block w-5 h-5 relative top-0.4 mr-1" src="assets/images/arsenal_ticket.png" />
-            <span class="tabular-nums">{{ arsenalTicketCostDisplay }}</span>
-          </div>
+          <UTooltip text="抽卡共消耗的嵌晶玉" v-if="hasCharGachaData">
+            <div
+              class="rounded-md font-medium inline-flex items-center text-sm ring ring-red-300 ring-inset text-default bg-default p-1.5"
+            >
+              <img class="block w-5 h-5 relative top-0.4 mr-1" src="assets/images/oroberyl.png" />
+              <span class="tabular-nums">{{ oroberylCostDisplay }}</span>
+            </div>
+          </UTooltip>
+          <UTooltip text="抽卡共消耗的武库配额" v-if="hasCharGachaData">
+            <div
+              class="rounded-md font-medium inline-flex items-center text-sm ring ring-blue-300 ring-inset text-default bg-default p-1.5"
+            >
+              <img class="block w-5 h-5 relative top-0.4 mr-1" src="assets/images/arsenal_ticket.png" />
+              <span class="tabular-nums">{{ arsenalTicketCostDisplay }}</span>
+            </div>
+          </UTooltip>
           <NuxtLink v-if="route.path === '/setting'" :to="settingBackTo">
             <UButton icon="i-lucide-arrow-left" label="戻る" color="neutral" variant="outline" />
           </NuxtLink>
@@ -88,6 +90,7 @@
 </template>
 
 <script lang="ts" setup>
+import { invoke } from '@tauri-apps/api/core';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { isSystemUid } from '~/utils/systemAccount'
 
@@ -217,6 +220,7 @@ watch(uid, async (newUid) => {
 
 onMounted(async () => {
   window.addEventListener('webdav-local-changed', onWebDavLocalChanged as EventListener)
+  await invoke('ensure_pool_info_defaults').catch(console.error)
   await detectPlatform();
   await loadConfig();
 
